@@ -1,6 +1,9 @@
 // server.js
 const express = require('express');
-const db = require('./config/db');
+require('./config/db');
+const initDB = require('./initDb');
+initDB(); // ← this auto creates schema + inserts data
+
 const cors = require('cors');
 require('dotenv').config();
 
