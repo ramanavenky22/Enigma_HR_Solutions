@@ -12,10 +12,10 @@ const getAllEmployees = (req, res) => {
   });
 };
 
-// Get employee by ID
+// Get employee by emp_no
 const getEmployeeById = (req, res) => {
   const { id } = req.params;
-  const query = 'SELECT * FROM employees WHERE id = ?';
+  const query = 'SELECT * FROM employees WHERE emp_no = ?';
   db.query(query, [id], (err, results) => {
     if (err) {
       console.error('Error fetching employee:', err);
@@ -30,23 +30,23 @@ const getEmployeeById = (req, res) => {
 
 // Create new employee
 const createEmployee = (req, res) => {
-  const { name, email, position, department, salary } = req.body;
-  const query = 'INSERT INTO employees (name, email, position, department, salary) VALUES (?, ?, ?, ?, ?)';
-  db.query(query, [name, email, position, department, salary], (err, results) => {
+  const { emp_no, birth_date, first_name, last_name, gender, hire_date } = req.body;
+  const query = 'INSERT INTO employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (?, ?, ?, ?, ?, ?)';
+  db.query(query, [emp_no, birth_date, first_name, last_name, gender, hire_date], (err, results) => {
     if (err) {
       console.error('Error creating employee:', err);
       return res.status(500).json({ error: 'Error creating employee' });
     }
-    res.status(201).json({ id: results.insertId, message: 'Employee created successfully' });
+    res.status(201).json({ emp_no: results.insertId, message: 'Employee created successfully' });
   });
 };
 
 // Update employee
 const updateEmployee = (req, res) => {
   const { id } = req.params;
-  const { name, email, position, department, salary } = req.body;
-  const query = 'UPDATE employees SET name = ?, email = ?, position = ?, department = ?, salary = ? WHERE id = ?';
-  db.query(query, [name, email, position, department, salary, id], (err, results) => {
+  const { birth_date, first_name, last_name, gender, hire_date } = req.body;
+  const query = 'UPDATE employees SET birth_date = ?, first_name = ?, last_name = ?, gender = ?, hire_date = ? WHERE emp_no = ?';
+  db.query(query, [birth_date, first_name, last_name, gender, hire_date, id], (err, results) => {
     if (err) {
       console.error('Error updating employee:', err);
       return res.status(500).json({ error: 'Error updating employee' });
@@ -61,7 +61,7 @@ const updateEmployee = (req, res) => {
 // Delete employee
 const deleteEmployee = (req, res) => {
   const { id } = req.params;
-  const query = 'DELETE FROM employees WHERE id = ?';
+  const query = 'DELETE FROM employees WHERE emp_no = ?';
   db.query(query, [id], (err, results) => {
     if (err) {
       console.error('Error deleting employee:', err);
