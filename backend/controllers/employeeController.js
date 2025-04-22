@@ -2,7 +2,17 @@ const db = require('../config/db');
 
 // Get all employees
 const getAllEmployees = (req, res) => {
-  const query = 'SELECT * FROM employees';
+  const query = `
+    SELECT 
+      e.*,
+      d.name as department_name,
+      m.name as manager_name
+    FROM employees e
+    LEFT JOIN departments d ON e.department_id = d.id
+    LEFT JOIN employees m ON e.manager_id = m.id
+    ORDER BY e.id
+  `;
+  
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching employees:', err);
