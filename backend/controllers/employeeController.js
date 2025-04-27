@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 // Get all employees
 const getAllEmployees = (req, res) => {
-  const query = 'SELECT * FROM employees';
+  const query = 'SELECT * FROM employees LIMIT 100';
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching employees:', err);

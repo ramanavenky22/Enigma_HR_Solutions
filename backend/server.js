@@ -1,15 +1,16 @@
 // server.js
 const express = require('express');
-require('./config/db');
+require('dotenv').config();
+require('./config/db'); // Your MySQL connection
 
 const cors = require('cors');
-require('dotenv').config();
-
-const employeeRoutes = require('./routes/employeeRoutes');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Import routes
+const employeeRoutes = require('./routes/employeeRoutes');
 
 // Register routes
 app.use('/api/employees', employeeRoutes);
