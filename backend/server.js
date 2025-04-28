@@ -1,8 +1,8 @@
 const express = require('express');
-require('./config/db');
+require('dotenv').config();
+require('./config/db'); // Your MySQL connection
 
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -12,6 +12,11 @@ const teamRoutes = require('./routes/teamsRoutes');
 const profileRoutes = require('./routes/profileRoutes'); 
 
 // Base route
+// Import routes
+const employeeRoutes = require('./routes/employeeRoutes');
+
+// Register routes
+app.use('/api/employees', employeeRoutes);
 app.get('/', (req, res) => {
   res.send('HR Portal Backend is running');
 });

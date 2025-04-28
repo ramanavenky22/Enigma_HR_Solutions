@@ -1,0 +1,12 @@
+<div class="welcome-container">
+    <h1>👋 Welcome to Enigma HR Portal</h1>
+    <p class="tagline">A secure, role-based platform for managing employees and operations</p>
+  
+    <!-- Only show login button before login -->
+    <button *ngIf="!(auth.isAuthenticated$ | async)"
+            (click)="login()"
+            class="btn-primary">
+      Login
+    </button>
+  </div>
+  
