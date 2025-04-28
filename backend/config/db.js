@@ -16,4 +16,4 @@ db.connect((err) => {
   console.log('✅ Connected to MySQL DB');
 });
 
-module.exports = db;
+module.exports = db.promise(); // 🔥 THIS enables async/await
