@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { checkJwt, checkRole } = require('../middleware/auth');
 const {
   getAllEmployees,
   getEmployeeById,
@@ -9,10 +10,10 @@ const {
 } = require('../controllers/employeeController');
 
 // Employee routes
-router.get('/', getAllEmployees);
-router.get('/:id', getEmployeeById);
-router.post('/', createEmployee);
-router.put('/:id', updateEmployee);
-router.delete('/:id', deleteEmployee);
+router.get('/',checkJwt, getAllEmployees);
+router.get('/:id',checkJwt, checkRole("hr"), getEmployeeById);
+router.post('/',checkJwt, checkRole("hr"), createEmployee);
+router.put('/:id',checkJwt, checkRole("hr"), updateEmployee);
+router.delete('/:id',checkJwt, checkRole("hr"), deleteEmployee);
 
 module.exports = router; 

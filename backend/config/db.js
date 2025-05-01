@@ -48,23 +48,22 @@ db.connect((err) => {
   });
 });
 
-// Add query wrapper for better error handling
-const query = (sql, params) => {
-  return new Promise((resolve, reject) => {
+// Convert to promise-based connection with error logging wrapper
+const promiseDb = db.promise();
+
+// Add query wrapper for better error logging
+const query = async (sql, params) => {
+  try {
     console.log('Executing query:', sql);
     console.log('With parameters:', params);
-    
-    db.query(sql, params, (err, results) => {
-      if (err) {
-        console.error('Query error:', err);
-        console.error('Failed query:', sql);
-        console.error('Query parameters:', params);
-        reject(err);
-      } else {
-        resolve(results);
-      }
-    });
-  });
+    const [results] = await promiseDb.execute(sql, params);
+    return results;
+  } catch (err) {
+    console.error('Query error:', err);
+    console.error('Failed query:', sql);
+    console.error('Query parameters:', params);
+    throw err;
+  }
 };
 
-module.exports = { db, query };
+module.exports = { db: promiseDb, query };

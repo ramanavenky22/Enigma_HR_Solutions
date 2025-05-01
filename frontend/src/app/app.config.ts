@@ -12,7 +12,9 @@ export const appConfig: ApplicationConfig = {
       authorizationParams: {
         redirect_uri: window.location.origin,
         audience: 'https://hr-portal/api' // optional if using RBAC-secured API
-      }
+      },
+      cacheLocation: 'localstorage',
+      useRefreshTokens: true 
     })
   ]
 };
