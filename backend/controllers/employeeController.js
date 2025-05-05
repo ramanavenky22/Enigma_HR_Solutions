@@ -1,4 +1,4 @@
-const { db, query } = require('../config/db');
+const { query, startTransaction, commitTransaction, rollbackTransaction } = require('../config/db');
 
 // Get all employees
 const getAllEmployees = async (req, res) => {
@@ -98,38 +98,30 @@ const createEmployee = async (req, res) => {
   try {
     const { emp_no, birth_date, first_name, last_name, gender, hire_date, department_no, title, salary } = req.body;
     
-    // Start a transaction
-    await query('START TRANSACTION');
+    // Parse dates
+    const parsedBirthDate = new Date(birth_date);
+    const parsedHireDate = new Date(hire_date);
     
-    try {
-      // Insert into employees table
-      const employeeQuery = 'INSERT INTO employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (?, ?, ?, ?, ?, ?)';
-      await query(employeeQuery, [emp_no, birth_date, first_name, last_name, gender, hire_date]);
+    // Insert into employees table
+    const employeeQuery = 'INSERT INTO employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (?, ?, ?, ?, ?, ?)';
+    await query(employeeQuery, [emp_no, parsedBirthDate, first_name, last_name, gender, parsedHireDate]);
 
-      // Insert into dept_emp table
-      const deptEmpQuery = 'INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date) VALUES (?, ?, ?, ?)';
-      await query(deptEmpQuery, [emp_no, department_no, hire_date, '9999-01-01']);
+    // Insert into dept_emp table
+    const deptEmpQuery = 'INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date) VALUES (?, ?, ?, ?)';
+    await query(deptEmpQuery, [emp_no, department_no, parsedHireDate, '9999-01-01']);
 
-      // Insert into titles table
-      const titleQuery = 'INSERT INTO titles (emp_no, title, from_date, to_date) VALUES (?, ?, ?, ?)';
-      await query(titleQuery, [emp_no, title, hire_date, '9999-01-01']);
+    // Insert into titles table
+    const titleQuery = 'INSERT INTO titles (emp_no, title, from_date, to_date) VALUES (?, ?, ?, ?)';
+    await query(titleQuery, [emp_no, title, parsedHireDate, '9999-01-01']);
 
-      // Insert into salaries table
-      const salaryQuery = 'INSERT INTO salaries (emp_no, salary, from_date, to_date) VALUES (?, ?, ?, ?)';
-      await query(salaryQuery, [emp_no, salary, hire_date, '9999-01-01']);
-
-      // Commit the transaction
-      await query('COMMIT');
-      
-      res.status(201).json({ 
-        message: 'Employee created successfully',
-        emp_no: emp_no
-      });
-    } catch (err) {
-      // Rollback the transaction
-      await query('ROLLBACK');
-      throw err;
-    }
+    // Insert into salaries table
+    const salaryQuery = 'INSERT INTO salaries (emp_no, salary, from_date, to_date) VALUES (?, ?, ?, ?)';
+    await query(salaryQuery, [emp_no, salary, parsedHireDate, '9999-01-01']);
+    
+    res.status(201).json({ 
+      message: 'Employee created successfully',
+      emp_no: emp_no
+    });
   } catch (err) {
     console.error('Error in createEmployee:', err);
     res.status(500).json({ 
@@ -149,103 +141,57 @@ const updateEmployee = async (req, res) => {
       return res.status(400).json({ error: 'Employee ID is required' });
     }
 
-    // Start a transaction
-    await query('START TRANSACTION');
-    
-    try {
-      // Update employees table
-      const employeeUpdates = [];
-      const employeeParams = [];
-      
-      if (birth_date !== undefined && birth_date !== null) { 
-        employeeUpdates.push('birth_date = ?'); 
-        employeeParams.push(birth_date); 
-      }
-      if (first_name !== undefined && first_name !== null) { 
-        employeeUpdates.push('first_name = ?'); 
-        employeeParams.push(first_name); 
-      }
-      if (last_name !== undefined && last_name !== null) { 
-        employeeUpdates.push('last_name = ?'); 
-        employeeParams.push(last_name); 
-      }
-      if (gender !== undefined && gender !== null) { 
-        employeeUpdates.push('gender = ?'); 
-        employeeParams.push(gender); 
-      }
-      if (hire_date !== undefined && hire_date !== null) { 
-        employeeUpdates.push('hire_date = ?'); 
-        employeeParams.push(hire_date); 
-      }
-      
-      if (employeeUpdates.length > 0) {
-        employeeParams.push(id);
-        const employeeQuery = `UPDATE employees SET ${employeeUpdates.join(', ')} WHERE emp_no = ?`;
-        await query(employeeQuery, employeeParams);
-      }
+    await startTransaction();
 
-      // Update department if provided
-      if (department_no !== undefined && department_no !== null) {
-        const deptUpdateQuery = `
-          UPDATE dept_emp 
-          SET to_date = CURRENT_DATE() 
-          WHERE emp_no = ? AND to_date = '9999-01-01'
-        `;
-        await query(deptUpdateQuery, [id]);
-
-        const newDeptQuery = `
-          INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date) 
-          VALUES (?, ?, CURRENT_DATE(), '9999-01-01')
-        `;
-        await query(newDeptQuery, [id, department_no]);
-      }
-
-      // Update title if provided
-      if (title !== undefined && title !== null) {
-        const titleUpdateQuery = `
-          UPDATE titles 
-          SET to_date = CURRENT_DATE() 
-          WHERE emp_no = ? AND to_date = '9999-01-01'
-        `;
-        await query(titleUpdateQuery, [id]);
-
-        const newTitleQuery = `
-          INSERT INTO titles (emp_no, title, from_date, to_date) 
-          VALUES (?, ?, CURRENT_DATE(), '9999-01-01')
-        `;
-        await query(newTitleQuery, [id, title]);
-      }
-
-      // Update salary if provided
-      if (salary !== undefined && salary !== null) {
-        const salaryUpdateQuery = `
-          UPDATE salaries 
-          SET to_date = CURRENT_DATE() 
-          WHERE emp_no = ? AND to_date = '9999-01-01'
-        `;
-        await query(salaryUpdateQuery, [id]);
-
-        const newSalaryQuery = `
-          INSERT INTO salaries (emp_no, salary, from_date, to_date) 
-          VALUES (?, ?, CURRENT_DATE(), '9999-01-01')
-        `;
-        await query(newSalaryQuery, [id, salary]);
-      }
-
-      // Commit the transaction
-      await query('COMMIT');
-      
-      res.json({ message: 'Employee updated successfully' });
-    } catch (err) {
-      // Rollback the transaction
-      await query('ROLLBACK');
-      throw err;
+    // Update employee details
+    if (first_name || last_name) {
+      const updateEmployeeQuery = 'UPDATE employees SET first_name = COALESCE(?, first_name), last_name = COALESCE(?, last_name) WHERE emp_no = ?';
+      await query(updateEmployeeQuery, [first_name, last_name, id]);
     }
+
+    // Update title
+    if (title) {
+      const currentDate = new Date().toISOString().slice(0, 10);
+      
+      // Update the current title
+      const updateTitleQuery = 'UPDATE titles SET title = ? WHERE emp_no = ? AND to_date = ?';
+      await query(updateTitleQuery, [title, id, '9999-01-01']);
+    }
+
+    // Update salary
+    if (salary) {
+      const currentDate = new Date().toISOString().slice(0, 10);
+      
+      // Update the current salary
+      const updateSalaryQuery = 'UPDATE salaries SET salary = ? WHERE emp_no = ? AND to_date = ?';
+      await query(updateSalaryQuery, [salary, id, '9999-01-01']);
+    }
+
+    // Update department
+    if (department_no) {
+      const currentDate = new Date().toISOString().slice(0, 10);
+      
+      // Set end date for current department
+      const endCurrentDeptQuery = 'UPDATE dept_emp SET to_date = ? WHERE emp_no = ? AND to_date = ?';
+      await query(endCurrentDeptQuery, [currentDate, id, '9999-01-01']);
+      
+      // Insert new department
+      const insertDeptQuery = 'INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date) VALUES (?, ?, ?, ?)';
+      await query(insertDeptQuery, [id, department_no, currentDate, '9999-01-01']);
+    }
+
+    await commitTransaction();
+    
+    res.json({
+      message: 'Employee updated successfully',
+      emp_no: id
+    });
   } catch (err) {
+    await rollbackTransaction();
     console.error('Error in updateEmployee:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Error updating employee',
-      details: err.message 
+      details: err.message
     });
   }
 };
@@ -255,45 +201,36 @@ const deleteEmployee = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Start a transaction
-    await query('START TRANSACTION');
-    
-    try {
-      // Update related records to set end dates
-      const updateQueries = [
-        'UPDATE dept_emp SET to_date = CURRENT_DATE() WHERE emp_no = ? AND to_date = "9999-01-01"',
-        'UPDATE titles SET to_date = CURRENT_DATE() WHERE emp_no = ? AND to_date = "9999-01-01"',
-        'UPDATE salaries SET to_date = CURRENT_DATE() WHERE emp_no = ? AND to_date = "9999-01-01"'
-      ];
+    if (!id) {
+      return res.status(400).json({ error: 'Employee ID is required' });
+    }
 
-      // Execute all update queries
-      for (const updateQuery of updateQueries) {
-        await query(updateQuery, [id]);
-      }
+    await startTransaction();
+
+    try {
+      // End all current assignments
+      const endDeptQuery = 'UPDATE dept_emp SET to_date = CURDATE() WHERE emp_no = ? AND to_date = "9999-01-01"';
+      await query(endDeptQuery, [id]);
+      
+      const endTitleQuery = 'UPDATE titles SET to_date = CURDATE() WHERE emp_no = ? AND to_date = "9999-01-01"';
+      await query(endTitleQuery, [id]);
+      
+      const endSalaryQuery = 'UPDATE salaries SET to_date = CURDATE() WHERE emp_no = ? AND to_date = "9999-01-01"';
+      await query(endSalaryQuery, [id]);
 
       // Delete the employee
-      const deleteQuery = 'DELETE FROM employees WHERE emp_no = ?';
-      const result = await query(deleteQuery, [id]);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('Employee not found');
-      }
+      const deleteEmployeeQuery = 'DELETE FROM employees WHERE emp_no = ?';
+      await query(deleteEmployeeQuery, [id]);
 
-      // Commit the transaction
-      await query('COMMIT');
-      
+      await commitTransaction();
       res.json({ message: 'Employee deleted successfully' });
-    } catch (err) {
-      // Rollback the transaction
-      await query('ROLLBACK');
-      throw err;
+    } catch (error) {
+      await rollbackTransaction();
+      throw error;
     }
-  } catch (err) {
-    console.error('Error in deleteEmployee:', err);
-    res.status(500).json({ 
-      error: 'Error deleting employee',
-      details: err.message 
-    });
+  } catch (error) {
+    console.error('Error deleting employee:', error);
+    res.status(500).json({ error: 'Error deleting employee', details: error.message });
   }
 };
 

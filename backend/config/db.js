@@ -56,7 +56,27 @@ const query = async (sql, params) => {
   try {
     console.log('Executing query:', sql);
     console.log('With parameters:', params);
-    const [results] = await promiseDb.execute(sql, params);
+    
+    // Format dates to MySQL format if needed
+    if (params) {
+      params = params.map(param => {
+        if (param instanceof Date) {
+          return param.toISOString().slice(0, 10);
+        }
+        return param;
+      });
+    }
+    
+    // Handle transaction commands
+    if (sql.toLowerCase() === 'start transaction' || 
+        sql.toLowerCase() === 'commit' || 
+        sql.toLowerCase() === 'rollback') {
+      const [results] = await promiseDb.query(sql);
+      return results;
+    }
+    
+    // Handle regular queries
+    const [results] = await promiseDb.query(sql, params);
     return results;
   } catch (err) {
     console.error('Query error:', err);
@@ -66,4 +86,19 @@ const query = async (sql, params) => {
   }
 };
 
-module.exports = { db: promiseDb, query };
+// Start a transaction
+const startTransaction = async () => {
+  await query('START TRANSACTION');
+};
+
+// Commit a transaction
+const commitTransaction = async () => {
+  await query('COMMIT');
+};
+
+// Rollback a transaction
+const rollbackTransaction = async () => {
+  await query('ROLLBACK');
+};
+
+module.exports = { db: promiseDb, query, startTransaction, commitTransaction, rollbackTransaction };

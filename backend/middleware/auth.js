@@ -1,5 +1,6 @@
 const { expressjwt: jwt } = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
+require('dotenv').config();
 
 const checkJwt = jwt({
   secret: jwksRsa.expressJwtSecret({
@@ -14,11 +15,16 @@ const checkJwt = jwt({
 });
 
 const checkRole = (role) => (req, res, next) => {
-  const roles = req.auth['https://hr-portal.com/roles'] || [];
-  if (roles.includes(role)) {
-    next();
-  } else {
-    res.status(403).send('Forbidden');
+  try {
+    const roles = req.auth['https://hr-portal.com/roles'] || [];
+    if (roles.includes(role)) {
+      next();
+    } else {
+      res.status(403).json({ error: 'Insufficient permissions' });
+    }
+  } catch (err) {
+    console.error('Error checking role:', err);
+    res.status(500).json({ error: 'Error checking permissions' });
   }
 };
 
