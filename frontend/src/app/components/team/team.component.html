@@ -1,0 +1,27 @@
+<div class="team-container">
+  <h2>My Team</h2>
+  <div *ngIf="loading" class="alert alert-info">Loading team...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="!loading && !error">
+    <table class="team-table" *ngIf="team.length > 0; else noTeam">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let member of team">
+          <td>{{ member.name }}</td>
+          <td>{{ member.role }}</td>
+          <td>{{ member.email }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #noTeam>
+      <div class="no-data">No team members found.</div>
+    </ng-template>
+  </div>
+</div>
+

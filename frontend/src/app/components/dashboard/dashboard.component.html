@@ -1,0 +1,65 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Employee Dashboard</h1>
+    <div class="dashboard-stats">
+      <div class="stat">
+        <div class="stat-value">{{ totalEmployees }}</div>
+        <div class="stat-label">Employees</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">{{ totalDepartments }}</div>
+        <div class="stat-label">Departments</div>
+      </div>
+    </div>
+    <button class="add-btn" (click)="onAddEmployee()">+ Add Employee</button>
+  </div>
+
+  <div class="dashboard-controls">
+    <input type="text" placeholder="Search employees..." [(ngModel)]="searchTerm" (input)="onSearch()" />
+    <select [(ngModel)]="selectedDepartment" (change)="onFilter()">
+      <option value="">All Departments</option>
+      <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+    </select>
+    <select [(ngModel)]="selectedRole" (change)="onFilter()">
+      <option value="">All Roles</option>
+      <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+    </select>
+  </div>
+
+  <div class="dashboard-table-container">
+    <table class="dashboard-table">
+      <thead>
+        <tr>
+          <th>Emp No</th>
+          <th>Name</th>
+          <th>Gender</th>
+          <th>Hire Date</th>
+          <th>Department</th>
+          <th>Title</th>
+          <th>Salary</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let employee of filteredEmployees">
+          <td>{{ employee.emp_no }}</td>
+          <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+          <td>{{ employee.gender }}</td>
+          <td>{{ employee.hire_date }}</td>
+          <td>{{ employee.department || '-' }}</td>
+          <td>{{ employee.title || '-' }}</td>
+          <td>{{ employee.salary != null ? employee.salary : '-' }}</td>
+          <td>
+            <button class="action-btn view" (click)="onView(employee)">View</button>
+            <button class="action-btn edit" (click)="onEdit(employee)">Edit</button>
+            <button class="action-btn delete" (click)="onDelete(employee)">Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredEmployees.length === 0">
+          <td colspan="4" class="no-data">No employees found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+

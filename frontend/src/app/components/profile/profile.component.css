@@ -1,0 +1,37 @@
+/* Profile Component Styles */
+.container {
+  max-width: 600px;
+}
+.card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+.card-title {
+  font-weight: 600;
+  color: #2c3e50;
+}
+.list-group-item {
+  border: none;
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+  font-size: 1.05rem;
+}
+.list-group-item strong {
+  color: #495057;
+  min-width: 110px;
+  display: inline-block;
+}
+.alert {
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 600px) {
+  .container {
+    padding: 0 8px;
+  }
+  .card {
+    margin-left: -8px;
+    margin-right: -8px;
+  }
+}
