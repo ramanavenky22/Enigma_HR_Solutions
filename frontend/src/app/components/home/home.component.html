@@ -1,16 +1,35 @@
 <div class="home-container">
-    <h2>🏠 Enigma HR Portal — Home</h2>
+  <div class="header">
+    <h1>🏠 Enigma HR Portal — Home</h1>
     <p>Welcome to your dashboard navigation panel.</p>
-  
-    <div class="nav-buttons">
-      <button (click)="goTo('/dashboard')">📊 Dashboard</button>
-      <button (click)="goTo('/profile')">👤 Profile</button>
-      <button (click)="goTo('/team')">👥 My Team</button>
-      <button (click)="goTo('/notifications')">🔔 Notifications</button>
-    </div>
-  
-    <button class="btn-logout" (click)="auth.logout({ logoutParams: { returnTo: windowOrigin }})">
-      Logout
+  </div>
+
+  <div class="nav-buttons">
+    <button class="nav-button" (click)="goTo('/dashboard')">
+      <div class="button-content">
+        <span class="icon">📊</span>
+        <span class="text">Dashboard</span>
+      </div>
+    </button>
+
+    <button class="nav-button" (click)="goTo('/profile')">
+      <div class="button-content">
+        <span class="icon">👤</span>
+        <span class="text">Profile</span>
+      </div>
+    </button>
+
+    <button class="nav-button" (click)="goTo('/team')">
+      <div class="button-content">
+        <span class="icon">👥</span>
+        <span class="text">My Team</span>
+      </div>
     </button>
   </div>
+
+  <button class="btn-logout" (click)="auth.logout({ logoutParams: { returnTo: windowOrigin }})">
+    <span class="icon">🚪</span>
+    Logout
+  </button>
+</div>
   

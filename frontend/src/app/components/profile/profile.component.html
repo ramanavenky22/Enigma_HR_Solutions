@@ -1,1 +1,67 @@
-<p>profile works!</p>
+<div class="profile-container">
+  <header class="profile-header">
+    <h1>👤 {{ isCurrentUser ? 'My Profile' : 'Employee Profile' }}</h1>
+    <button class="back-button" (click)="router.navigate(['/dashboard'])">
+      <span class="icon">⬅️</span>
+      Back to Dashboard
+    </button>
+  </header>
+
+  <ng-container *ngIf="employee$ | async as employee; else loading">
+    <div class="profile-card">
+      <div class="profile-info">
+        <div class="avatar">{{ employee?.first_name?.[0] }}{{ employee?.last_name?.[0] }}</div>
+        <div class="profile-details">
+          <h2>{{ employee?.first_name }} {{ employee?.last_name }}</h2>
+          <p class="title">{{ employee?.title }}</p>
+          <p class="department">{{ employee?.department_name }}</p>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-item">
+          <span class="stat-label">Employee ID</span>
+          <span class="stat-value">#{{ employee?.emp_no }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Birth Date</span>
+          <span class="stat-value">{{ formatDate(employee?.birth_date) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Hire Date</span>
+          <span class="stat-value">{{ formatDate(employee?.hire_date) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Gender</span>
+          <span class="stat-value">{{ employee?.gender === 'M' ? 'Male' : employee?.gender === 'F' ? 'Female' : 'Other' }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Salary</span>
+          <span class="stat-value">{{ formatSalary(employee?.salary) }}</span>
+        </div>
+        <div class="stat-item" *ngIf="employee?.manager_name">
+          <span class="stat-label">Manager</span>
+          <span class="stat-value">{{ employee?.manager_name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-cards" *ngIf="isCurrentUser">
+      <div class="action-card">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+          <button class="action-button" (click)="router.navigate(['/employees', employee?.emp_no, 'edit'])">
+            <span class="icon">✏️</span>
+            Edit Profile
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #loading>
+    <div class="loading-spinner">
+      <p>Loading employee details...</p>
+    </div>
+  </ng-template>
+</div>

@@ -38,7 +38,7 @@ const getAllEmployees = async (req, res) => {
       params.push(department);
     }
 
-    queryStr += ' ORDER BY e.emp_no';
+    queryStr += ' ORDER BY e.emp_no LIMIT 20';
 
     const results = await query(queryStr, params);
     res.json(results);

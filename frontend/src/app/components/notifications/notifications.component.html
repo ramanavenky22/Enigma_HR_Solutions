@@ -1,1 +1,49 @@
-<p>notifications works!</p>
+<div class="notifications-container">
+  <header class="notifications-header">
+    <h1>🔔 Notifications</h1>
+    <button class="back-button" (click)="goBack()">
+      <span class="icon">⬅️</span>
+      Back to Home
+    </button>
+  </header>
+
+  <div class="notifications-content">
+    <div class="notification-filters">
+      <button
+        *ngFor="let filter of filters"
+        class="filter-button"
+        [class.active]="currentFilter === filter"
+        (click)="setFilter(filter)"
+      >
+        {{ filter }}
+      </button>
+    </div>
+
+    <div class="notifications-list">
+      <div
+        *ngFor="let notification of filteredNotifications"
+        class="notification-item"
+        [class.unread]="!notification.read"
+        (click)="markAsRead(notification.id)"
+      >
+        <span class="notification-icon" [innerHTML]="notification.icon"></span>
+        <div class="notification-details">
+          <p class="notification-message">{{ notification.message }}</p>
+          <span class="notification-time">{{ notification.time }}</span>
+        </div>
+        <button
+          class="action-button"
+          *ngIf="notification.actionLabel"
+          (click)="handleAction(notification)"
+        >
+          {{ notification.actionLabel }}
+        </button>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="filteredNotifications.length === 0">
+      <span class="icon">📧</span>
+      <p>No notifications to display</p>
+    </div>
+  </div>
+</div>

@@ -1,1 +1,53 @@
-<p>team works!</p>
+<div class="team-container">
+  <header class="team-header">
+    <h1>👥 My Team</h1>
+    <button class="back-button" (click)="goBack()">
+      <span class="icon">⬅️</span>
+      Back to Home
+    </button>
+  </header>
+
+  <div class="team-content">
+    <div class="search-bar">
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (input)="onSearch()"
+        placeholder="Search team members..."
+        class="search-input"
+      />
+      <div class="team-stats">
+        <span class="stat-item">
+          <span class="stat-value">{{ teamMembers.length }}</span>
+          <span class="stat-label">Team Members</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="team-grid">
+      <div class="member-card" *ngFor="let member of filteredMembers">
+        <img [src]="member.picture" [alt]="member.name" class="member-picture">
+        <div class="member-info">
+          <h3>{{ member.name }}</h3>
+          <p class="position">{{ member.position }}</p>
+          <p class="department">{{ member.department }}</p>
+        </div>
+        <div class="member-actions">
+          <button class="action-button" (click)="viewProfile(member.id)">
+            <span class="icon">👤</span>
+            View Profile
+          </button>
+          <button class="action-button" (click)="sendMessage(member.id)">
+            <span class="icon">💬</span>
+            Message
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="filteredMembers.length === 0">
+      <span class="icon">🔍</span>
+      <p>No team members found matching your search.</p>
+    </div>
+  </div>
+</div>
