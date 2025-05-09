@@ -26,7 +26,6 @@
 
     <div class="team-grid">
       <div class="member-card" *ngFor="let member of filteredMembers">
-        <img [src]="member.picture" [alt]="member.name" class="member-picture">
         <div class="member-info">
           <h3>{{ member.name }}</h3>
           <p class="position">{{ member.position }}</p>
@@ -37,12 +36,6 @@
             <span class="icon">👤</span>
             View Profile
           </button>
-          <button class="action-button" (click)="sendMessage(member.id)">
-            <span class="icon">💬</span>
-            Message
-          </button>
-        </div>
-      </div>
     </div>
 
     <div class="empty-state" *ngIf="filteredMembers.length === 0">

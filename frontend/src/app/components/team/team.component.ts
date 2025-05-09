@@ -71,11 +71,7 @@ export class TeamComponent implements OnInit {
   }
 
   viewProfile(id: number) {
-    this.router.navigate(['/profile', id]);
-  }
-
-  sendMessage(id: number) {
-    // TODO: Implement messaging functionality
-    console.log('Send message to:', id);
+    // For testing, always navigate to employee 499999
+    this.router.navigate(['/employees', 499999]);
   }
 }

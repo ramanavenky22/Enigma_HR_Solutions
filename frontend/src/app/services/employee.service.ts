@@ -46,6 +46,10 @@ export class EmployeeService {
     return this.http.get<Employee>(`${this.apiUrl}/${id}`);
   }
 
+  getProfileByEmpId(empId: number): Observable<Employee> {
+    return this.http.get<Employee>(`${API_URL}/api/profile`, { params: { empId } });
+  }
+
   createEmployee(employee: NewEmployee): Observable<Employee> {
     return this.http.post<Employee>(this.apiUrl, employee);
   }
