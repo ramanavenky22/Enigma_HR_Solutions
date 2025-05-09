@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
 
 // Team and profile routes
 app.use('/', teamRoutes);
-app.use('/', profileRoutes);
+app.use('/api', profileRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

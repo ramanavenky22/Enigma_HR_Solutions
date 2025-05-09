@@ -37,33 +37,29 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit() {
     const empId = this.route.snapshot.params['id'];
-    const dummyEmployee = {
-      emp_no: empId || 10001,
-      first_name: 'John',
-      last_name: 'Doe',
-      birth_date: '1990-01-01',
-      gender: 'M',
-      hire_date: '2020-01-01',
-      department_name: 'Engineering',
-      title: 'Senior Software Engineer',
-      salary: 120000,
-      manager_name: 'Jane Smith'
-    };
 
     if (empId) {
-      this.employee$ = of(dummyEmployee);
+      this.employee$ = this.employeeService.getProfileByEmpId(empId).pipe(
+        catchError(() => of(null))
+      );
       this.isCurrentUser = false;
     } else {
       // For current user profile
       this.auth.user$.subscribe(user => {
         if (user?.email) {
+          // You may fetch the current user's employee details here if needed
+          // For now, fallback to dummy data
           const currentUserEmployee = {
-            ...dummyEmployee,
+            emp_no: 10002,
             first_name: user.name?.split(' ')[0] || 'Current',
             last_name: user.name?.split(' ')[1] || 'User',
-            emp_no: 10002,
+            birth_date: '1989-12-31',
+            gender: 'M',
+            hire_date: '2019-12-31',
+            department_name: 'Engineering',
             title: 'Product Manager',
-            salary: 150000
+            salary: 150000,
+            manager_name: 'Jane Smith'
           };
           this.employee$ = of(currentUserEmployee);
           this.isCurrentUser = true;
