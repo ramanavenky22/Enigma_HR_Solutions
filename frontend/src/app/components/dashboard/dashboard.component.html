@@ -7,126 +7,141 @@
     </button>
   </header>
 
-  <div class="dashboard-grid">
-    <div class="dashboard-card employee-stats">
-      <h2>Employee Statistics</h2>
-      <div class="stat-grid">
-        <div class="stat-item">
-          <span class="stat-value">{{ totalEmployees }}</span>
-          <span class="stat-label">Total Employees</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">{{ departments.length }}</span>
-          <span class="stat-label">Departments</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="dashboard-card employee-list">
-      <h2>Employee Directory</h2>
-      
-      <div class="filters">
-        <div class="search-bar">
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm"
-            (input)="onSearch($any($event.target).value)"
-            placeholder="Search employees..."
-            class="search-input"
-          >
-        </div>
+  <div class="dashboard-layout">
+    <div class="main-content">
+      <div class="dashboard-card employee-list">
+        <h2>Employee Directory</h2>
         
-        <div class="filter-controls">
-          <select [(ngModel)]="selectedDepartment" (change)="filterEmployees()" class="filter-select">
-            <option value="">All Departments</option>
-            <option *ngFor="let dept of departments" [value]="dept">{{dept}}</option>
-          </select>
+        <div class="filters">
+          <div class="search-bar">
+            <input 
+              type="text" 
+              [(ngModel)]="searchTerm"
+              (input)="onSearch($any($event.target).value)"
+              placeholder="Search employee name..."
+              class="search-input"
+            >
+          </div>
           
-          <select [(ngModel)]="selectedTitle" (change)="filterEmployees()" class="filter-select">
-            <option value="">All Titles</option>
-            <option *ngFor="let title of titles" [value]="title">{{title}}</option>
-          </select>
+          <div class="filter-controls">
+            <select [(ngModel)]="selectedDepartment" (change)="filterEmployees()" class="filter-select">
+              <option value="">All Departments</option>
+              <option *ngFor="let dept of departments" [value]="dept">{{dept}}</option>
+            </select>
+            
+            <select [(ngModel)]="selectedTitle" (change)="filterEmployees()" class="filter-select">
+              <option value="">All Titles</option>
+              <option *ngFor="let title of titles" [value]="title">{{title}}</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div class="employee-grid">
-        <div *ngFor="let employee of filteredEmployees" class="employee-card">
-          <div class="employee-info" (click)="viewProfile(employee.emp_no)">
-            <h3>{{employee.first_name}} {{employee.last_name}}</h3>
-            <p class="title">{{employee.title}}</p>
-            <p class="department">{{employee.department_name}}</p>
-          </div>
-          <div class="employee-actions">
-            <button class="action-btn edit" (click)="editEmployee(employee.emp_no); $event.stopPropagation()">
-              ✏️ Edit
-            </button>
-            <button class="action-btn delete" (click)="confirmDelete(employee.emp_no); $event.stopPropagation()">
-              🗑️ Delete
-            </button>
-          </div>
+        <div class="table-responsive">
+          <table class="employee-table">
+            <thead>
+              <tr>
+                <th>Employee Name</th>
+                <th>Department</th>
+                <th>Title</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let employee of filteredEmployees" (click)="viewProfile(employee.emp_no)">
+                <td>{{employee.first_name}} {{employee.last_name}}</td>
+                <td>{{employee.department_name}}</td>
+                <td>{{employee.title}}</td>
+                <td class="actions-cell">
+                  <button class="action-btn edit" (click)="editEmployee(employee.emp_no); $event.stopPropagation()">
+                    ✏️ Edit
+                  </button>
+                  <button class="action-btn delete" (click)="confirmDelete(employee.emp_no); $event.stopPropagation()">
+                    🗑️ Delete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <div class="dashboard-card recent-activity">
-      <h2>Recent Activity</h2>
-      <div class="activity-list">
-        <div class="activity-item" *ngFor="let activity of recentActivities">
-          <span class="activity-icon">{{ activity.icon }}</span>
-          <div class="activity-details">
-            <span class="activity-title">{{ activity.title }}</span>
-            <span class="activity-time">{{ activity.time }}</span>
+    <div class="side-panel">
+      <div class="dashboard-card employee-stats">
+        <h2>Employee Statistics</h2>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-value">{{ totalEmployees }}</span>
+            <span class="stat-label">Total Employees</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ departments.length }}</span>
+            <span class="stat-label">Departments</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="dashboard-card salary-trends">
-      <h2>Salary Trends</h2>
-      <div class="trend-stats">
-        <div class="trend-item">
-          <span class="trend-label">Average Salary</span>
-          <span class="trend-value">{{ averageSalary | currency }}</span>
-          <span class="trend-change" [class.positive]="salaryGrowth > 0" [class.negative]="salaryGrowth < 0">
-            {{ salaryGrowth > 0 ? '↑' : '↓' }} {{ salaryGrowth }}%
-          </span>
-        </div>
-        <div class="trend-item">
-          <span class="trend-label">Department Range</span>
-          <span class="trend-value">
-            {{ minSalary | currency }} - {{ maxSalary | currency }}
-          </span>
+
+
+      <div class="dashboard-card quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+          <button (click)="addEmployee()" class="action-button">
+            <span class="icon">➕</span>
+            Add Employee
+          </button>
+          <button (click)="viewTeam()" class="action-button">
+            <span class="icon">👥</span>
+            View Team
+          </button>
+          <button (click)="viewNotifications()" class="action-button">
+            <span class="icon">🔔</span>
+            Notifications
+            <span class="notification-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+          </button>
         </div>
       </div>
-      <div class="trend-chart">
-        <!-- Placeholder for salary trend chart -->
-        <div class="chart-bars">
-          <div class="chart-bar" *ngFor="let data of salaryTrends"
-               [style.height]="data.percentage + '%'"
-               [title]="data.month + ': ' + (data.amount | currency)">
-            <span class="bar-label">{{ data.month }}</span>
+
+      <div class="dashboard-card recent-activity">
+        <h2>Recent Activity</h2>
+        <div class="activity-list">
+          <div class="activity-item" *ngFor="let activity of recentActivities">
+            <span class="activity-icon">{{ activity.icon }}</span>
+            <div class="activity-details">
+              <span class="activity-title">{{ activity.title }}</span>
+              <span class="activity-time">{{ activity.time }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="dashboard-card quick-actions">
-      <h2>Quick Actions</h2>
-      <div class="action-buttons">
-        <button (click)="addEmployee()" class="action-button">
-          <span class="icon">➕</span>
-          Add Employee
-        </button>
-        <button (click)="viewTeam()" class="action-button">
-          <span class="icon">👥</span>
-          View Team
-        </button>
-        <button (click)="viewNotifications()" class="action-button">
-          <span class="icon">🔔</span>
-          Notifications
-          <span class="notification-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-        </button>
+      <div class="dashboard-card salary-trends">
+        <h2>Salary Trends</h2>
+        <div class="trend-stats">
+          <div class="trend-item">
+            <span class="trend-label">Average Salary</span>
+            <span class="trend-value">{{ averageSalary | currency }}</span>
+            <span class="trend-change" [class.positive]="salaryGrowth > 0" [class.negative]="salaryGrowth < 0">
+              {{ salaryGrowth > 0 ? '↑' : '↓' }} {{ salaryGrowth }}%
+            </span>
+          </div>
+          <div class="trend-item">
+            <span class="trend-label">Department Range</span>
+            <span class="trend-value">
+              {{ minSalary | currency }} - {{ maxSalary | currency }}
+            </span>
+          </div>
+        </div>
+        <div class="trend-chart">
+          <!-- Placeholder for salary trend chart -->
+          <div class="chart-bars">
+            <div class="chart-bar" *ngFor="let data of salaryTrends"
+                 [style.height]="data.percentage + '%'"
+                 [title]="data.month + ': ' + (data.amount | currency)">
+              <span class="bar-label">{{ data.month }}</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
   </div>
 </div>
