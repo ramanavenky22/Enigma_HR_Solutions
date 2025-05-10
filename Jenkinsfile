@@ -8,12 +8,11 @@ pipeline {
   environment {
     BACKEND_DIR = 'backend'
     FRONTEND_DIR = 'frontend'
-    //NODE_ENV = 'production'
     NODE_ENV = 'development'
   }
 
   options {
-    timeout(time: 10, unit: 'MINUTES') // Prevents long-running stuck builds
+    timeout(time: 10, unit: 'MINUTES')
   }
 
   stages {
@@ -42,15 +41,21 @@ pipeline {
       }
     }
 
-stage('Build Frontend') {
-  steps {
-    dir("${env.FRONTEND_DIR}") {
-      echo '🏗️ Building frontend using npx with forced execution...'
-      sh 'npx --yes ng build'
+    stage('Build Frontend') {
+      steps {
+        dir("${env.FRONTEND_DIR}") {
+          echo '🏗️ Building frontend using npx with forced execution...'
+          sh 'npx --yes ng build'
+        }
+      }
     }
-  }
-}
 
+    stage('Archive Frontend Build Artifacts') {
+      steps {
+        echo '📁 Archiving frontend build artifacts...'
+        archiveArtifacts artifacts: "${env.FRONTEND_DIR}/dist/**", fingerprint: true
+      }
+    }
 
     stage('Test (Optional)') {
       steps {
