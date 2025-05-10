@@ -49,11 +49,10 @@ const syncUser = async (req, res, next) => {
   }
 };
 
-
-const checkRole = (role) => (req, res, next) => {
+const checkRole = (roles) => (req, res, next) => {
   try {
-    const roles = req.auth['https://hr-portal.com/roles'] || [];
-    if (roles.includes(role)) {
+    const userRoles = req.auth['https://hr-portal.com/roles'] || [];
+    if (roles.some((role) => userRoles.includes(role))) {
       next();
     } else {
       res.status(403).json({ error: 'Insufficient permissions' });
