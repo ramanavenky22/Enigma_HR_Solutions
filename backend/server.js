@@ -9,6 +9,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Direct health check route (no router)
+const { query } = require('./config/db');
+app.get('/api/health-direct', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', db: 'disconnected', error: err.message });
+  }
+});
+
+// Health check route (no auth)
+const healthRoutes = require('./routes/healthRoutes');
+app.use('/api', healthRoutes);
+
 // Apply checkJwt and syncUser globally to all routes
 app.use(checkJwt);
 app.use(syncUser);

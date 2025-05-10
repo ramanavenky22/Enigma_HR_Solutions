@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
+import { AuthService } from '@auth0/auth0-angular';
 
 // TODO: Update with your actual API URL
 const API_URL = 'http://localhost:3000';
@@ -47,7 +48,7 @@ export interface UpdateEmployee {
 export class EmployeeService {
   private apiUrl = `${API_URL}/api/employees`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
 
   getAllEmployees(filters?: { title?: string; department?: string }): Observable<Employee[]> {
     return this.http.get<Employee[]>(this.apiUrl, {
@@ -91,11 +92,23 @@ export class EmployeeService {
   }
 
   createEmployee(employee: NewEmployee): Observable<Employee> {
-    return this.http.post<Employee>(this.apiUrl, employee);
+    return this.auth.getAccessTokenSilently().pipe(
+      switchMap(token =>
+        this.http.post<Employee>(this.apiUrl, employee, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      )
+    );
   }
 
   updateEmployee(id: number, employee: UpdateEmployee): Observable<Employee> {
-    return this.http.put<Employee>(`${this.apiUrl}/${id}`, employee);
+    return this.auth.getAccessTokenSilently().pipe(
+      switchMap(token =>
+        this.http.put<Employee>(`${this.apiUrl}/${id}`, employee, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      )
+    );
   }
 
   deleteEmployee(id: number): Observable<void> {

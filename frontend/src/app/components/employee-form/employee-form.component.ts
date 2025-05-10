@@ -24,6 +24,8 @@ interface Department {
         </button>
       </header>
 
+      <div *ngIf="updateMessage" class="update-message">{{ updateMessage }}</div>
+
       <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" class="employee-form">
         <div class="form-group">
           <label for="firstName">First Name</label>
@@ -79,6 +81,17 @@ interface Department {
     .employee-form-container {
       padding: 2rem;
       max-width: 800px;
+    }
+    .update-message {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #e8f5e9;
+      color: #256029;
+      font-weight: 500;
+      border: 1px solid #b2dfdb;
+    }
+
       margin: 0 auto;
     }
 
@@ -172,6 +185,7 @@ interface Department {
 export class EmployeeFormComponent implements OnInit {
   employeeForm: FormGroup;
   isEditMode = false;
+  updateMessage: string = '';
   departments: Department[] = [
     { dept_no: 'd001', dept_name: 'Marketing' },
     { dept_no: 'd002', dept_name: 'Finance' },
@@ -235,7 +249,11 @@ export class EmployeeFormComponent implements OnInit {
 
   patchEmployeeForm(employee: Employee): void {
     // Convert date string back to YYYY-MM-DD format for the input
-    const birthDate = new Date(employee.birth_date).toISOString().split('T')[0];
+    let birthDate = '';
+    if (employee.birth_date) {
+      const dateObj = new Date(employee.birth_date);
+      birthDate = !isNaN(dateObj.getTime()) ? dateObj.toISOString().split('T')[0] : '';
+    }
     
     // Find the matching department based on department_name
     const dept = this.departments.find((d: Department) => d.dept_name === employee.department_name);
@@ -252,6 +270,7 @@ export class EmployeeFormComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.updateMessage = '';
     if (this.employeeForm.valid) {
       const formData = this.employeeForm.value;
       const id = this.route.snapshot.params['id'];
@@ -272,16 +291,27 @@ export class EmployeeFormComponent implements OnInit {
           // If editing by auth0_id, we already have the emp_no from loading the form
           const empId = this.route.snapshot.queryParams['emp_no'];
           if (empId) {
-            this.employeeService.updateEmployee(parseInt(empId, 10), employeeData).subscribe(() => {
-              this.router.navigate(['/profile']);
+            this.employeeService.updateEmployee(parseInt(empId, 10), employeeData).subscribe({
+              next: () => {
+                this.updateMessage = 'Profile updated successfully!';
+                setTimeout(() => this.router.navigate(['/profile']), 1200);
+              },
+              error: () => {
+                this.updateMessage = 'Failed to update profile. Please try again.';
+              }
             });
           }
         } else if (id) {
           // If editing by emp_no
           const empId = parseInt(id, 10);
-          this.employeeService.updateEmployee(empId, employeeData).subscribe(() => {
-            // No need to check auth0_id again, we already know from form loading
-            this.router.navigate(['/dashboard']);
+          this.employeeService.updateEmployee(empId, employeeData).subscribe({
+            next: () => {
+              this.updateMessage = 'Employee updated successfully!';
+              setTimeout(() => this.router.navigate(['/dashboard']), 1200);
+            },
+            error: () => {
+              this.updateMessage = 'Failed to update employee. Please try again.';
+            }
           });
         }
       } else {
@@ -295,14 +325,21 @@ export class EmployeeFormComponent implements OnInit {
           title: employeeData.title || '',
           salary: employeeData.salary || 0
         };
-        this.employeeService.createEmployee(newEmployeeData).subscribe(() => {
-          this.router.navigate(['/dashboard']);
+        this.employeeService.createEmployee(newEmployeeData).subscribe({
+          next: () => {
+            this.updateMessage = 'Employee created successfully!';
+            setTimeout(() => this.router.navigate(['/dashboard']), 1200);
+          },
+          error: () => {
+            this.updateMessage = 'Failed to create employee. Please try again.';
+          }
         });
       }
     }
   }
 
   goBack(): void {
+    this.updateMessage = '';
     const id = this.route.snapshot.params['id'];
     const auth0Id = this.route.snapshot.params['auth0_id'];
     
