@@ -54,7 +54,7 @@
       <div class="action-card">
         <h3>Quick Actions</h3>
         <div class="action-buttons">
-          <button class="action-button" (click)="router.navigate(['/employees', employee?.emp_no, 'edit'])">
+          <button class="action-button" *ngIf="employee?.auth0_id" (click)="router.navigate(['/profile', employee.auth0_id, 'edit'])">
             <span class="icon">✏️</span>
             Edit Profile
           </button>

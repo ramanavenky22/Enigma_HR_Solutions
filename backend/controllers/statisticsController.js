@@ -53,6 +53,44 @@ const getEmployeeStats = async (req, res) => {
       ORDER BY year ASC, month ASC
     `);
 
+    // First, get a list of all months in the last 12 months
+    const monthsList = await query(`
+      WITH RECURSIVE months AS (
+        SELECT DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AS month_date
+        UNION ALL
+        SELECT DATE_ADD(month_date, INTERVAL 1 MONTH)
+        FROM months
+        WHERE month_date < CURDATE()
+      )
+      SELECT 
+        YEAR(month_date) as year,
+        MONTH(month_date) as month
+      FROM months;
+    `);
+
+    // Then get salary data for each month
+    const trends = await Promise.all(monthsList.map(async ({ year, month }) => {
+      const [salaryData] = await query(`
+        SELECT 
+          ROUND(AVG(salary)) as average_salary,
+          MIN(salary) as min_salary,
+          MAX(salary) as max_salary
+        FROM salaries
+        WHERE YEAR(from_date) <= ? 
+        AND MONTH(from_date) <= ?
+        AND (YEAR(to_date) > ? OR (YEAR(to_date) = ? AND MONTH(to_date) >= ?))
+        AND to_date = '9999-01-01'
+      `, [year, month, year, year, month]);
+
+      return {
+        year,
+        month,
+        average_salary: salaryData.average_salary || 0,
+        min_salary: salaryData.min_salary || 0,
+        max_salary: salaryData.max_salary || 0
+      };
+    }));
+
     res.json({
       totalEmployees: totalCount.total,
       departmentDistribution: deptDistribution,
@@ -77,18 +115,43 @@ const getEmployeeStats = async (req, res) => {
 // Get salary trends over time
 const getSalaryTrends = async (req, res) => {
   try {
-    const trends = await query(`
+    // First, get a list of all months in the last 12 months
+    const monthsList = await query(`
+      WITH RECURSIVE months AS (
+        SELECT 
+          CURDATE() - INTERVAL 11 MONTH AS month_date
+        UNION ALL
+        SELECT 
+          month_date + INTERVAL 1 MONTH
+        FROM months
+        WHERE month_date < CURDATE()
+      )
       SELECT 
-        YEAR(from_date) as year,
-        MONTH(from_date) as month,
-        AVG(salary) as average_salary,
-        MIN(salary) as min_salary,
-        MAX(salary) as max_salary
-      FROM salaries
-      WHERE from_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-      GROUP BY YEAR(from_date), MONTH(from_date)
-      ORDER BY year ASC, month ASC
+        YEAR(month_date) as year,
+        MONTH(month_date) as month
+      FROM months
     `);
+
+    // Then get salary data for each month
+    const trends = await Promise.all(monthsList.map(async ({ year, month }) => {
+      const [salaryData] = await query(`
+        SELECT 
+          ROUND(AVG(salary)) as average_salary,
+          MIN(salary) as min_salary,
+          MAX(salary) as max_salary
+        FROM salaries
+        WHERE to_date = '9999-01-01'
+        AND from_date <= DATE_FORMAT(?, '%Y-%m-%d')
+      `, [new Date(year, month - 1).toISOString().split('T')[0]]);
+
+      return {
+        year,
+        month,
+        average_salary: salaryData.average_salary || 0,
+        min_salary: salaryData.min_salary || 0,
+        max_salary: salaryData.max_salary || 0
+      };
+    }));
 
     res.json(trends);
   } catch (error) {

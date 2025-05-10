@@ -49,9 +49,11 @@ export class ProfileComponent implements OnInit {
       this.auth.user$.subscribe(user => {
         if (user?.sub) { // sub is the auth0_id
           // Try to find employee by auth0_id
-          this.employeeService.getProfileByAuth0Id(user.sub).subscribe({
+          this.employeeService.getProfileByAuth0Id(user.sub).pipe(
+            map(employee => ({ ...employee, auth0_id: user.sub }))
+          ).subscribe({
             next: (employee: Employee) => {
-              this.employee$ = of(employee);
+              this.employee$ = of({ ...employee, auth0_id: user.sub });
               this.isCurrentUser = true;
             },
             error: (error: Error) => {

@@ -3,7 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-import { EmployeeService, NewEmployee } from '../../services/employee.service';
+import { EmployeeService, NewEmployee, Employee } from '../../services/employee.service';
+
+interface Department {
+  dept_no: string;
+  dept_name: string;
+}
 
 @Component({
   selector: 'app-employee-form',
@@ -167,7 +172,7 @@ import { EmployeeService, NewEmployee } from '../../services/employee.service';
 export class EmployeeFormComponent implements OnInit {
   employeeForm: FormGroup;
   isEditMode = false;
-  departments = [
+  departments: Department[] = [
     { dept_no: 'd001', dept_name: 'Marketing' },
     { dept_no: 'd002', dept_name: 'Finance' },
     { dept_no: 'd003', dept_name: 'Human Resources' },
@@ -196,38 +201,55 @@ export class EmployeeFormComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     const id = this.route.snapshot.params['id'];
-    if (id) {
+    const auth0Id = this.route.snapshot.params['auth0_id'];
+    
+    if (id || auth0Id) {
       this.isEditMode = true;
-      this.loadEmployee(id);
+      if (auth0Id) {
+        this.loadEmployeeByAuth0Id(auth0Id);
+      } else if (id) {
+        this.loadEmployeeById(parseInt(id, 10));
+      }
     }
   }
 
-  loadEmployee(id: number) {
-    this.employeeService.getEmployeeById(id).subscribe(employee => {
-      // Convert date string back to YYYY-MM-DD format for the input
-      const birthDate = new Date(employee.birth_date).toISOString().split('T')[0];
-      
-      // Find the matching department based on department_name
-      const dept = this.departments.find(d => d.dept_name === employee.department_name);
-
-      this.employeeForm.patchValue({
-        firstName: employee.first_name,
-        lastName: employee.last_name,
-        birthDate: birthDate,
-        gender: employee.gender,
-        department: dept?.dept_no || '', // Use the found department's dept_no
-        title: employee.title,
-        salary: employee.salary
-      });
+  loadEmployeeByAuth0Id(auth0Id: string): void {
+    this.employeeService.getProfileByAuth0Id(auth0Id).subscribe((employee: Employee) => {
+      this.patchEmployeeForm(employee);
     });
   }
 
-  onSubmit() {
+  loadEmployeeById(id: number): void {
+    this.employeeService.getEmployeeById(id).subscribe((employee: Employee) => {
+      this.patchEmployeeForm(employee);
+    });
+  }
+
+  patchEmployeeForm(employee: Employee): void {
+    // Convert date string back to YYYY-MM-DD format for the input
+    const birthDate = new Date(employee.birth_date).toISOString().split('T')[0];
+    
+    // Find the matching department based on department_name
+    const dept = this.departments.find((d: Department) => d.dept_name === employee.department_name);
+
+    this.employeeForm.patchValue({
+      firstName: employee.first_name,
+      lastName: employee.last_name,
+      birthDate: birthDate,
+      gender: employee.gender,
+      department: dept?.dept_no || '', // Use the found department's dept_no
+      title: employee.title,
+      salary: employee.salary
+    });
+  }
+
+  onSubmit(): void {
     if (this.employeeForm.valid) {
       const formData = this.employeeForm.value;
       const id = this.route.snapshot.params['id'];
+      const auth0Id = this.route.snapshot.params['auth0_id'];
 
       const employeeData: NewEmployee = {
         first_name: formData.firstName,
@@ -239,20 +261,29 @@ export class EmployeeFormComponent implements OnInit {
         salary: formData.salary
       };
 
-      if (this.isEditMode && id) {
-        // If editing, update and redirect to profile
-        this.employeeService.updateEmployee(id, employeeData).subscribe(() => {
-          // Check if we're editing our own profile
-          this.employeeService.getEmployeeById(id).subscribe(employee => {
-            if (employee.auth0_id) {
-              // If it's our profile, go back to profile page
-              this.router.navigate(['/profile']);
-            } else {
-              // If it's another employee, go to dashboard
-              this.router.navigate(['/dashboard']);
+      if (this.isEditMode) {
+        if (auth0Id) {
+          // If editing by auth0_id, first get the employee details
+          this.employeeService.getProfileByAuth0Id(auth0Id).subscribe((employee: Employee) => {
+            if (employee && employee.emp_no) {
+              this.employeeService.updateEmployee(employee.emp_no, employeeData).subscribe(() => {
+                this.router.navigate(['/profile']);
+              });
             }
           });
-        });
+        } else if (id) {
+          // If editing by emp_no
+          const empId = parseInt(id, 10);
+          this.employeeService.updateEmployee(empId, employeeData).subscribe(() => {
+            this.employeeService.getEmployeeById(empId).subscribe((employee: Employee) => {
+              if (employee?.auth0_id) {
+                this.router.navigate(['/profile']);
+              } else {
+                this.router.navigate(['/dashboard']);
+              }
+            });
+          });
+        }
       } else {
         // If creating new, go to dashboard
         this.employeeService.createEmployee(employeeData).subscribe(() => {
@@ -262,19 +293,25 @@ export class EmployeeFormComponent implements OnInit {
     }
   }
 
-  goBack() {
+  goBack(): void {
     const id = this.route.snapshot.params['id'];
-    if (this.isEditMode && id) {
-      // Check if we're editing our own profile
-      this.employeeService.getEmployeeById(id).subscribe(employee => {
-        if (employee.auth0_id) {
-          // If it's our profile, go back to profile page
-          this.router.navigate(['/profile']);
-        } else {
-          // If it's another employee, go to dashboard
-          this.router.navigate(['/dashboard']);
-        }
-      });
+    const auth0Id = this.route.snapshot.params['auth0_id'];
+    
+    if (this.isEditMode) {
+      if (auth0Id) {
+        // If editing by auth0_id, go back to profile
+        this.router.navigate(['/profile']);
+      } else if (id) {
+        // Check if we're editing our own profile
+        const empId = parseInt(id, 10);
+        this.employeeService.getEmployeeById(empId).subscribe((employee: Employee) => {
+          if (employee?.auth0_id) {
+            this.router.navigate(['/profile']);
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
+        });
+      }
     } else {
       // If creating new, go to dashboard
       this.router.navigate(['/dashboard']);
