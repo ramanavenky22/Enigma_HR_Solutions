@@ -17,6 +17,7 @@ const teamRoutes = require('./routes/teamsRoutes');
 const profileRoutes = require('./routes/profileRoutes.js');
 const employeeRoutes = require('./routes/employeeRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const statisticsRoutes = require('./routes/statisticsRoutes');
 
 // Register routes
 app.use('/api/employees', employeeRoutes);
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 // Team and profile routes
 app.use('/', teamRoutes);
 app.use('/api', profileRoutes);
+app.use('/api/statistics', statisticsRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

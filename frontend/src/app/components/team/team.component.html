@@ -28,11 +28,11 @@
       <div class="member-card" *ngFor="let member of filteredMembers">
         <div class="member-info">
           <h3>{{ member.name }}</h3>
-          <p class="position">{{ member.position }}</p>
-          <p class="department">{{ member.department }}</p>
+          <p class="position">{{ member.title }}</p>
+          <p class="department">{{ member.department_name }}</p>
         </div>
         <div class="member-actions">
-          <button class="action-button" (click)="viewProfile(member.id)">
+          <button class="action-button" (click)="viewProfile(member.emp_no)">
             <span class="icon">👤</span>
             View Profile
           </button>

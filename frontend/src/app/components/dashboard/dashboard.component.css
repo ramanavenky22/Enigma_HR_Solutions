@@ -33,15 +33,21 @@
   background-color: #e0e0e0;
 }
 
-.dashboard-layout {
-  display: flex;
+.dashboard-content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
   gap: 2rem;
   margin-top: 2rem;
 }
 
-.main-content {
-  flex: 1;
-  min-width: 0; /* Prevents flex item from overflowing */
+@media (max-width: 1200px) {
+  .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+
+  .side-panel {
+    order: -1;
+  }
 }
 
 .side-panel {
@@ -136,6 +142,38 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.page-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
 .employee-table {
   width: 100%;
   border-collapse: collapse;
@@ -143,6 +181,17 @@
 }
 
 .employee-table th,
+.employee-table td a {
+  color: #2196F3;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.employee-table td a:hover {
+  text-decoration: underline;
+  color: #1976D2;
+}
+
 .employee-table td {
   padding: 1rem;
   text-align: left;
@@ -279,11 +328,168 @@
   grid-column: span 2;
 }
 
-.trend-stats {
+/* Detailed Salary Trends Section */
+.salary-trends-detailed {
+  margin-top: 2rem;
+  padding: 1.5rem;
+}
+
+.main-content > .dashboard-card + .dashboard-card {
+  margin-top: 2rem;
+}
+
+.trend-overview {
+  margin-bottom: 2rem;
+}
+
+.trend-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.trend-stat-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.trend-stat-card h3 {
+  color: #495057;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.5rem;
+}
+
+.range-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.min-value, .max-value {
+  flex: 1;
+}
+
+.min-value span, .max-value span {
+  font-size: 0.9rem;
+  color: #6c757d;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.min-value div, .max-value div {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.trend-chart-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.trend-chart-container h3 {
+  color: #495057;
   margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.trend-chart {
+  height: 300px;
+  position: relative;
+  margin-top: 1rem;
+}
+
+.chart-grid {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.chart-bar {
+  flex: 1;
+  background: #4dabf7;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: all 0.3s;
+  min-height: 4px;
+}
+
+.chart-bar.positive {
+  background: #40c057;
+}
+
+.chart-bar.negative {
+  background: #fa5252;
+}
+
+.bar-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #212529;
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.chart-bar:hover .bar-tooltip {
+  opacity: 1;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.month-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  transform: rotate(-45deg);
+  transform-origin: top left;
+  margin-left: 1rem;
+}
+
+.trend-change {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trend-change.positive {
+  color: #40c057;
+}
+
+.trend-change.negative {
+  color: #fa5252;
 }
 
 .trend-item {

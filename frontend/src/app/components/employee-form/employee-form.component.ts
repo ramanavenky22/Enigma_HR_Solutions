@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-import { EmployeeService, Employee, NewEmployee } from '../../services/employee.service';
+import { EmployeeService, NewEmployee } from '../../services/employee.service';
 
 @Component({
   selector: 'app-employee-form',
@@ -46,9 +46,9 @@ import { EmployeeService, Employee, NewEmployee } from '../../services/employee.
 
         <div class="form-group">
           <label for="department">Department</label>
-          <select id="department" formControlName="department" class="form-control">
-            <option value="">Select Department</option>
-            <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+          <select id="department" formControlName="department" class="form-control" required>
+            <option value="" disabled>Select Department</option>
+            <option *ngFor="let dept of departments" [value]="dept.dept_no">{{ dept.dept_name }}</option>
           </select>
         </div>
 
@@ -168,12 +168,15 @@ export class EmployeeFormComponent implements OnInit {
   employeeForm: FormGroup;
   isEditMode = false;
   departments = [
-    'Development',
-    'Marketing',
-    'Sales',
-    'HR',
-    'Finance',
-    'Operations'
+    { dept_no: 'd001', dept_name: 'Marketing' },
+    { dept_no: 'd002', dept_name: 'Finance' },
+    { dept_no: 'd003', dept_name: 'Human Resources' },
+    { dept_no: 'd004', dept_name: 'Production' },
+    { dept_no: 'd005', dept_name: 'Development' },
+    { dept_no: 'd006', dept_name: 'Quality Management' },
+    { dept_no: 'd007', dept_name: 'Sales' },
+    { dept_no: 'd008', dept_name: 'Research' },
+    { dept_no: 'd009', dept_name: 'Customer Service' }
   ];
 
   constructor(
@@ -187,7 +190,7 @@ export class EmployeeFormComponent implements OnInit {
       lastName: ['', Validators.required],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
-      department: ['', Validators.required],
+      department: [null, Validators.required],
       title: ['', Validators.required],
       salary: ['', [Validators.required, Validators.min(0)]]
     });
@@ -203,12 +206,18 @@ export class EmployeeFormComponent implements OnInit {
 
   loadEmployee(id: number) {
     this.employeeService.getEmployeeById(id).subscribe(employee => {
+      // Convert date string back to YYYY-MM-DD format for the input
+      const birthDate = new Date(employee.birth_date).toISOString().split('T')[0];
+      
+      // Find the matching department based on department_name
+      const dept = this.departments.find(d => d.dept_name === employee.department_name);
+
       this.employeeForm.patchValue({
         firstName: employee.first_name,
         lastName: employee.last_name,
-        birthDate: employee.birth_date,
+        birthDate: birthDate,
         gender: employee.gender,
-        department: employee.department_name,
+        department: dept?.dept_no || '', // Use the found department's dept_no
         title: employee.title,
         salary: employee.salary
       });
@@ -218,22 +227,34 @@ export class EmployeeFormComponent implements OnInit {
   onSubmit() {
     if (this.employeeForm.valid) {
       const formData = this.employeeForm.value;
+      const id = this.route.snapshot.params['id'];
+
       const employeeData: NewEmployee = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         birth_date: formData.birthDate,
         gender: formData.gender,
-        department_name: formData.department,
+        department_no: formData.department,
         title: formData.title,
         salary: formData.salary
       };
 
-      if (this.isEditMode) {
-        const id = this.route.snapshot.params['id'];
+      if (this.isEditMode && id) {
+        // If editing, update and redirect to profile
         this.employeeService.updateEmployee(id, employeeData).subscribe(() => {
-          this.router.navigate(['/dashboard']);
+          // Check if we're editing our own profile
+          this.employeeService.getEmployeeById(id).subscribe(employee => {
+            if (employee.auth0_id) {
+              // If it's our profile, go back to profile page
+              this.router.navigate(['/profile']);
+            } else {
+              // If it's another employee, go to dashboard
+              this.router.navigate(['/dashboard']);
+            }
+          });
         });
       } else {
+        // If creating new, go to dashboard
         this.employeeService.createEmployee(employeeData).subscribe(() => {
           this.router.navigate(['/dashboard']);
         });
@@ -242,6 +263,21 @@ export class EmployeeFormComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/dashboard']);
+    const id = this.route.snapshot.params['id'];
+    if (this.isEditMode && id) {
+      // Check if we're editing our own profile
+      this.employeeService.getEmployeeById(id).subscribe(employee => {
+        if (employee.auth0_id) {
+          // If it's our profile, go back to profile page
+          this.router.navigate(['/profile']);
+        } else {
+          // If it's another employee, go to dashboard
+          this.router.navigate(['/dashboard']);
+        }
+      });
+    } else {
+      // If creating new, go to dashboard
+      this.router.navigate(['/dashboard']);
+    }
   }
 }

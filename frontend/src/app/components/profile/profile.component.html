@@ -1,9 +1,9 @@
 <div class="profile-container">
   <header class="profile-header">
     <h1>👤 {{ isCurrentUser ? 'My Profile' : 'Employee Profile' }}</h1>
-    <button class="back-button" (click)="router.navigate(['/dashboard'])">
+    <button class="back-button" (click)="router.navigate(['/'])">
       <span class="icon">⬅️</span>
-      Back to Dashboard
+      Back to Home
     </button>
   </header>
 
@@ -13,8 +13,8 @@
         <div class="avatar">{{ employee?.first_name?.[0] }}{{ employee?.last_name?.[0] }}</div>
         <div class="profile-details">
           <h2>{{ employee?.first_name }} {{ employee?.last_name }}</h2>
-          <p class="title">{{ employee?.title }}</p>
-          <p class="department">{{ employee?.department_name }}</p>
+          <p class="title">{{ employee?.title || 'N/A' }}</p>
+          <p class="department">{{ employee?.department_name || 'No Department Assigned' }}</p>
         </div>
       </div>
 
@@ -34,6 +34,10 @@
         <div class="stat-item">
           <span class="stat-label">Gender</span>
           <span class="stat-value">{{ employee?.gender === 'M' ? 'Male' : employee?.gender === 'F' ? 'Female' : 'Other' }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Department</span>
+          <span class="stat-value">{{ employee?.department_name || 'No Department Assigned' }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Salary</span>

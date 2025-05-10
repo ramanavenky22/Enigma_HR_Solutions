@@ -16,10 +16,11 @@ export const appConfig: ApplicationConfig = {
       clientId: 'EQrggKzdvxoJLY2e6H3rtdPWa5aUOQd9',
       authorizationParams: {
         redirect_uri: window.location.origin,
-        audience: 'https://hr-portal/api' // optional if using RBAC-secured API
+        audience: 'https://hr-portal/api',
+        scope: 'openid profile email offline_access'
       },
       cacheLocation: 'localstorage',
-      useRefreshTokens: true 
+      useRefreshTokens: true
     })
   ]
 };

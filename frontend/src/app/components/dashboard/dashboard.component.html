@@ -7,8 +7,9 @@
     </button>
   </header>
 
-  <div class="dashboard-layout">
+  <div class="dashboard-content">
     <div class="main-content">
+      <!-- Employee Directory Section -->
       <div class="dashboard-card employee-list">
         <h2>Employee Directory</h2>
         
@@ -47,8 +48,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let employee of filteredEmployees" (click)="viewProfile(employee.emp_no)">
-                <td>{{employee.first_name}} {{employee.last_name}}</td>
+              <tr *ngFor="let employee of filteredEmployees">
+                <td><a href="javascript:void(0)" (click)="viewProfile(employee.emp_no)">{{employee.first_name}} {{employee.last_name}}</a></td>
                 <td>{{employee.department_name}}</td>
                 <td>{{employee.title}}</td>
                 <td class="actions-cell">
@@ -62,6 +63,71 @@
               </tr>
             </tbody>
           </table>
+          <div class="pagination-controls" *ngIf="totalPages > 1">
+            <button 
+              class="page-btn" 
+              [disabled]="currentPage === 1" 
+              (click)="previousPage()"
+            >Previous</button>
+            <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+            <button 
+              class="page-btn" 
+              [disabled]="currentPage === totalPages" 
+              (click)="nextPage()"
+            >Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Salary Trends Section -->
+      <div class="dashboard-card salary-trends-detailed">
+        <h2>Salary Trends Analysis</h2>
+        <div class="trend-overview">
+          <div class="trend-stats-grid">
+            <div class="trend-stat-card">
+              <h3>Average Salary</h3>
+              <div class="stat-value">{{ averageSalary | currency }}</div>
+              <div class="trend-change" [class.positive]="salaryGrowth > 0" [class.negative]="salaryGrowth < 0">
+                {{ salaryGrowth > 0 ? '↑' : '↓' }} {{ salaryGrowth }}%
+              </div>
+            </div>
+            <div class="trend-stat-card">
+              <h3>Salary Range</h3>
+              <div class="range-values">
+                <div class="min-value">
+                  <span>Min</span>
+                  <div>{{ minSalary | currency }}</div>
+                </div>
+                <div class="max-value">
+                  <span>Max</span>
+                  <div>{{ maxSalary | currency }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="trend-chart-container">
+          <h3>Monthly Salary Trends</h3>
+          <div class="trend-chart">
+            <div class="chart-grid">
+              <div class="chart-bars">
+                <div class="chart-bar" *ngFor="let data of salaryTrends"
+                     [style.height]="(data.amount / maxSalary * 100) + '%'"
+                     [class.positive]="data.percentage > 0"
+                     [class.negative]="data.percentage < 0">
+                  <div class="bar-tooltip">
+                    <div>{{ data.month }}</div>
+                    <div>{{ data.amount | currency }}</div>
+                    <div>{{ data.percentage }}%</div>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-labels">
+                <div class="month-label" *ngFor="let data of salaryTrends">{{ data.month }}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -80,9 +146,6 @@
           </div>
         </div>
       </div>
-
-
-
       <div class="dashboard-card quick-actions">
         <h2>Quick Actions</h2>
         <div class="action-buttons">
@@ -114,34 +177,6 @@
           </div>
         </div>
       </div>
-
-      <div class="dashboard-card salary-trends">
-        <h2>Salary Trends</h2>
-        <div class="trend-stats">
-          <div class="trend-item">
-            <span class="trend-label">Average Salary</span>
-            <span class="trend-value">{{ averageSalary | currency }}</span>
-            <span class="trend-change" [class.positive]="salaryGrowth > 0" [class.negative]="salaryGrowth < 0">
-              {{ salaryGrowth > 0 ? '↑' : '↓' }} {{ salaryGrowth }}%
-            </span>
-          </div>
-          <div class="trend-item">
-            <span class="trend-label">Department Range</span>
-            <span class="trend-value">
-              {{ minSalary | currency }} - {{ maxSalary | currency }}
-            </span>
-          </div>
-        </div>
-        <div class="trend-chart">
-          <!-- Placeholder for salary trend chart -->
-          <div class="chart-bars">
-            <div class="chart-bar" *ngFor="let data of salaryTrends"
-                 [style.height]="data.percentage + '%'"
-                 [title]="data.month + ': ' + (data.amount | currency)">
-              <span class="bar-label">{{ data.month }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
   </div>
 </div>

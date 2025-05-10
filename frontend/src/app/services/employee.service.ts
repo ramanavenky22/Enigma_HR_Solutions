@@ -14,12 +14,22 @@ export interface Employee {
   gender: string;
   hire_date: string;
   department_name: string;
+  dept_no: string;
   title: string;
   salary: number;
   manager_name: string;
+  auth0_id?: string;
 }
 
-export type NewEmployee = Omit<Employee, 'emp_no' | 'hire_date' | 'manager_name'>;
+export interface NewEmployee {
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  gender: string;
+  department_no: string;
+  title: string;
+  salary: number;
+}
 export type UpdateEmployee = Partial<NewEmployee>;
 
 @Injectable({
@@ -36,18 +46,39 @@ export class EmployeeService {
     }).pipe(
       map((employees: Employee[]) => employees.map((emp: Employee) => ({
         ...emp,
-        // Add any necessary transformations here
-        name: `${emp.first_name} ${emp.last_name}`
+        // Format dates for display
+        birth_date: new Date(emp.birth_date).toLocaleDateString(),
+        hire_date: new Date(emp.hire_date).toLocaleDateString(),
+        // Format salary
+        salary: emp.salary || 0
       })))
     );
   }
 
   getEmployeeById(id: number): Observable<Employee> {
-    return this.http.get<Employee>(`${this.apiUrl}/${id}`);
+    return this.http.get<Employee>(`${this.apiUrl}/${id}`).pipe(
+      map((employee: any) => ({
+        ...employee,
+        department_name: employee.department_name || 'No Department Assigned',
+        dept_no: employee.dept_no,
+        birth_date: employee.birth_date ? new Date(employee.birth_date).toLocaleDateString() : 'N/A',
+        hire_date: employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : 'N/A',
+        salary: employee.salary || 0
+      }) as Employee)
+    );
   }
 
-  getProfileByEmpId(empId: number): Observable<Employee> {
-    return this.http.get<Employee>(`${API_URL}/api/profile`, { params: { empId } });
+  getProfileByAuth0Id(auth0Id: string): Observable<Employee> {
+    return this.http.get<Employee>(`${this.apiUrl}/profile/${auth0Id}`).pipe(
+      map((employee: any) => ({
+        ...employee,
+        department_name: employee.department_name || 'No Department Assigned',
+        dept_no: employee.dept_no || '',
+        birth_date: employee.birth_date ? new Date(employee.birth_date).toLocaleDateString() : 'N/A',
+        hire_date: employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : 'N/A',
+        salary: employee.salary || 0
+      }) as Employee)
+    );
   }
 
   createEmployee(employee: NewEmployee): Observable<Employee> {
@@ -62,14 +93,34 @@ export class EmployeeService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // Additional methods for salary trends
-  getSalaryTrends(): Observable<{
-    averageSalary: number;
-    salaryGrowth: number;
-    minSalary: number;
-    maxSalary: number;
-    trends: Array<{ month: string; amount: number; percentage: number }>;
+  // Statistics methods
+  getEmployeeStats(): Observable<{
+    totalEmployees: number;
+    departmentDistribution: Array<{ dept_name: string; count: number }>;
+    genderDistribution: { male_count: number; female_count: number };
+    salaryStatistics: { average: number; minimum: number; maximum: number };
+    titleDistribution: Array<{ title: string; count: number }>;
+    hiringTrends: Array<{ year: number; month: number; count: number }>;
   }> {
-    return this.http.get<any>(`${this.apiUrl}/salary-trends`);
+    return this.http.get<any>(`${API_URL}/api/statistics/stats`);
+  }
+
+  getSalaryTrends(): Observable<Array<{
+    year: number;
+    month: number;
+    average_salary: number;
+    min_salary: number;
+    max_salary: number;
+  }>> {
+    return this.http.get<any>(`${API_URL}/api/statistics/salary-trends`);
+  }
+
+  getDepartmentGrowth(): Observable<Array<{
+    dept_name: string;
+    new_hires: number;
+    total_employees: number;
+    growth_rate: number;
+  }>> {
+    return this.http.get<any>(`${API_URL}/api/statistics/department-growth`);
   }
 }

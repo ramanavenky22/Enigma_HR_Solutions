@@ -17,6 +17,15 @@ interface SalaryTrend {
   percentage: number;
 }
 
+interface EmployeeStats {
+  totalEmployees: number;
+  departmentDistribution: Array<{ dept_name: string; count: number }>;
+  genderDistribution: { male_count: number; female_count: number };
+  salaryStatistics: { average: number; minimum: number; maximum: number };
+  titleDistribution: Array<{ title: string; count: number }>;
+  hiringTrends: Array<{ year: number; month: number; count: number }>;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -39,25 +48,20 @@ export class DashboardComponent implements OnInit {
   titles: string[] = [];
   private searchSubject = new Subject<string>();
 
-  // Dummy data for testing
-  dummyDepartments = ['Engineering', 'Marketing', 'Sales'];
-  dummyTitles = ['Senior Engineer', 'Manager', 'Developer', 'Analyst'];
+  // Pagination
+  currentPage: number = 1;
+  pageSize: number = 10;
+  totalPages: number = 1;
 
-  // Salary trend data
-  averageSalary: number = 85000;
-  salaryGrowth: number = 5.2;
-  minSalary: number = 65000;
-  maxSalary: number = 150000;
-  unreadNotifications: number = 3;
-
-  salaryTrends: SalaryTrend[] = [
-    { month: 'Jan', amount: 82000, percentage: 75 },
-    { month: 'Feb', amount: 83000, percentage: 78 },
-    { month: 'Mar', amount: 83500, percentage: 80 },
-    { month: 'Apr', amount: 84000, percentage: 82 },
-    { month: 'May', amount: 85000, percentage: 85 },
-    { month: 'Jun', amount: 85500, percentage: 88 }
-  ];
+  // Statistics data
+  averageSalary: number = 0;
+  salaryGrowth: number = 0;
+  minSalary: number = 0;
+  maxSalary: number = 0;
+  unreadNotifications: number = 0;
+  salaryTrends: SalaryTrend[] = [];
+  genderDistribution: { male_count: number; female_count: number } = { male_count: 0, female_count: 0 };
+  departmentGrowth: Array<{ dept_name: string; growth_rate: number }> = [];
 
   constructor(
     private router: Router,
@@ -74,30 +78,31 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadDashboardData();
+    this.loadEmployees();
+    this.loadStatistics();
   }
 
   loadEmployees() {
-    // Generate dummy employee data
-    this.employees = Array.from({ length: 20 }, (_, i) => ({
-      emp_no: 10001 + i,
-      first_name: `Employee`,
-      last_name: `${i + 1}`,
-      birth_date: '1990-01-01',
-      gender: i % 2 === 0 ? 'M' : 'F',
-      hire_date: '2020-01-01',
-      department_name: this.dummyDepartments[i % this.dummyDepartments.length],
-      title: this.dummyTitles[i % this.dummyTitles.length],
-      salary: 80000 + (i * 5000),
-      manager_name: 'Jane Smith'
-    }));
+    const filters: { title?: string; department?: string } = {};
+    if (this.selectedTitle) filters.title = this.selectedTitle;
+    if (this.selectedDepartment) filters.department = this.selectedDepartment;
 
-    // Update stats
-    this.totalEmployees = this.employees.length;
-    this.departments = this.dummyDepartments;
-    this.titles = this.dummyTitles;
-    
-    // Initialize filtered list
-    this.filteredEmployees = [...this.employees];
+    this.employeeService.getAllEmployees(filters).subscribe({
+      next: (employees) => {
+        this.employees = employees;
+        
+        // Extract unique departments and titles
+        this.departments = [...new Set(employees.map(emp => emp.department_name))];
+        this.titles = [...new Set(employees.map(emp => emp.title))];
+        
+        // Update pagination
+        this.updatePaginatedEmployees(employees);
+      },
+      error: (error) => {
+        console.error('Error loading employees:', error);
+        // TODO: Show error message to user
+      }
+    });
   }
 
   onSearch(term: string) {
@@ -106,19 +111,18 @@ export class DashboardComponent implements OnInit {
   }
 
   filterEmployees() {
-    this.filteredEmployees = this.employees.filter(employee => {
-      const matchesSearch = !this.searchTerm || 
-        employee.first_name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        employee.last_name.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesDepartment = !this.selectedDepartment || 
-        employee.department_name === this.selectedDepartment;
-      
-      const matchesTitle = !this.selectedTitle || 
-        employee.title === this.selectedTitle;
-
-      return matchesSearch && matchesDepartment && matchesTitle;
-    });
+    // Only apply client-side filtering for search term
+    // Department and title filtering are handled by the API
+    if (this.searchTerm) {
+      const filtered = this.employees.filter(employee => {
+        const fullName = `${employee.first_name} ${employee.last_name}`.toLowerCase();
+        return fullName.includes(this.searchTerm.toLowerCase());
+      });
+      this.updatePaginatedEmployees(filtered);
+    } else {
+      // If only department or title filters are active, reload from API
+      this.loadEmployees();
+    }
   }
 
   viewProfile(empNo: number) {
@@ -150,19 +154,106 @@ export class DashboardComponent implements OnInit {
   }
 
   loadDashboardData() {
-    // Initialize employee data first
-    this.loadEmployees();
-
-    // Recent activities
     this.recentActivities = [
-      { icon: '👋', title: 'New employee joined', time: '2 hours ago' },
-      { icon: '📈', title: 'Performance review completed', time: '1 day ago' },
-      { icon: '🎉', title: 'Project milestone achieved', time: '2 days ago' }
+      { icon: '👤', title: 'Loading statistics...', time: 'Just now' }
     ];
+  }
 
-    // Simulated data - replace with actual API calls
-    this.totalEmployees = 240;
-    this.departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'];
+  updatePaginatedEmployees(employees: Employee[]) {
+    this.totalPages = Math.ceil(employees.length / this.pageSize);
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    this.filteredEmployees = employees.slice(start, end);
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.filterEmployees();
+    }
+  }
+
+  nextPage() {
+    this.goToPage(this.currentPage + 1);
+  }
+
+  previousPage() {
+    this.goToPage(this.currentPage - 1);
+  }
+
+  loadStatistics() {
+    // Load employee stats
+    this.employeeService.getEmployeeStats().subscribe({
+      next: (stats: EmployeeStats) => {
+        this.totalEmployees = stats.totalEmployees;
+        this.averageSalary = stats.salaryStatistics.average;
+        this.minSalary = stats.salaryStatistics.minimum;
+        this.maxSalary = stats.salaryStatistics.maximum;
+
+        this.recentActivities = [
+          { 
+            icon: '👥', 
+            title: `${stats.totalEmployees} Total Employees`, 
+            time: 'Current' 
+          },
+          { 
+            icon: '📊', 
+            title: `Gender Ratio: ${Math.round(stats.genderDistribution.male_count * 100 / stats.totalEmployees)}% Male`, 
+            time: 'Current' 
+          }
+        ];
+      },
+      error: (error: any) => {
+        console.error('Error loading statistics:', error);
+        this.recentActivities = [{ 
+          icon: '❌', 
+          title: 'Error loading statistics', 
+          time: 'Just now' 
+        }];
+      }
+    });
+
+    this.employeeService.getDepartmentGrowth().subscribe({
+      next: (growth: any[]) => {
+        this.departmentGrowth = growth;
+      },
+      error: (error: any) => console.error('Error loading department growth:', error)
+    });
+
+    this.employeeService.getSalaryTrends().subscribe({
+      next: (trends: Array<{ year: number; month: number; average_salary: number; min_salary: number; max_salary: number }>) => {
+        let prevAmount = 0;
+        this.salaryTrends = trends.map(trend => {
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const percentage = prevAmount ? ((trend.average_salary - prevAmount) / prevAmount) * 100 : 0;
+          prevAmount = trend.average_salary;
+          
+          return {
+            month: monthNames[trend.month - 1],
+            amount: trend.average_salary,
+            percentage: Number(percentage.toFixed(1))
+          };
+        });
+
+        // Calculate salary growth
+        if (trends.length >= 2) {
+          const firstMonth = trends[0].average_salary;
+          const lastMonth = trends[trends.length - 1].average_salary;
+          this.salaryGrowth = Number(((lastMonth - firstMonth) / firstMonth * 100).toFixed(1));
+        }
+
+        // Update salary statistics if not already set
+        if (trends.length > 0 && !this.averageSalary) {
+          const lastTrend = trends[trends.length - 1];
+          this.averageSalary = lastTrend.average_salary;
+          this.minSalary = lastTrend.min_salary;
+          this.maxSalary = lastTrend.max_salary;
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading salary trends:', error);
+      }
+    });
   }
 
   goBack() {

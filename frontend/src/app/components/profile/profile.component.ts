@@ -12,6 +12,7 @@ interface User {
   name: string;
   email: string;
   picture: string;
+  sub: string; // auth0_id
 }
 
 @Component({
@@ -39,30 +40,41 @@ export class ProfileComponent implements OnInit {
     const empId = this.route.snapshot.params['id'];
 
     if (empId) {
-      this.employee$ = this.employeeService.getProfileByEmpId(empId).pipe(
+      this.employee$ = this.employeeService.getEmployeeById(empId).pipe(
         catchError(() => of(null))
       );
       this.isCurrentUser = false;
     } else {
       // For current user profile
       this.auth.user$.subscribe(user => {
-        if (user?.email) {
-          // You may fetch the current user's employee details here if needed
-          // For now, fallback to dummy data
-          const currentUserEmployee = {
-            emp_no: 10002,
-            first_name: user.name?.split(' ')[0] || 'Current',
-            last_name: user.name?.split(' ')[1] || 'User',
-            birth_date: '1989-12-31',
-            gender: 'M',
-            hire_date: '2019-12-31',
-            department_name: 'Engineering',
-            title: 'Product Manager',
-            salary: 150000,
-            manager_name: 'Jane Smith'
-          };
-          this.employee$ = of(currentUserEmployee);
-          this.isCurrentUser = true;
+        if (user?.sub) { // sub is the auth0_id
+          // Try to find employee by auth0_id
+          this.employeeService.getProfileByAuth0Id(user.sub).subscribe({
+            next: (employee: Employee) => {
+              this.employee$ = of(employee);
+              this.isCurrentUser = true;
+            },
+            error: (error: Error) => {
+              console.error('Error fetching employee profile:', error);
+              // If not found, show basic user info
+              const currentUserEmployee: Employee = {
+                emp_no: 0,
+                first_name: user.name?.split(' ')[0] || 'Current',
+                last_name: user.name?.split(' ')[1] || 'User',
+                birth_date: new Date().toISOString(),
+                gender: 'N/A',
+                hire_date: new Date().toISOString(),
+                department_name: 'N/A',
+                dept_no: '',
+                title: 'N/A',
+                salary: 0,
+                manager_name: 'N/A',
+                auth0_id: user.sub
+              };
+              this.employee$ = of(currentUserEmployee);
+              this.isCurrentUser = true;
+            }
+          });
         }
       });
     }
