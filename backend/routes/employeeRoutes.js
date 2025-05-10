@@ -11,9 +11,9 @@ const {
 
 // Employee routes
 router.get('/', getAllEmployees);
-router.get('/:id', checkRole("hr"), getEmployeeById);
-router.post('/', checkRole("hr"), createEmployee);
-router.put('/:id', checkRole("hr"), updateEmployee);
-router.delete('/:id', checkRole("hr"), deleteEmployee);
+router.get('/:id', checkRole(["hr"]), getEmployeeById);
+router.post('/', checkRole(["hr"]), createEmployee);
+router.put('/:id', checkRole(["hr"]), updateEmployee);
+router.delete('/:id', checkRole(["hr"]), deleteEmployee);
 
 module.exports = router; 

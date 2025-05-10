@@ -4,8 +4,8 @@ const { checkJwt } = require('../middleware/auth');
 const notificationController = require('../controllers/notificationController');
 
 // Notification routes
-router.get('/', checkJwt, notificationController.getNotifications);
-router.get('/unread-count', checkJwt, notificationController.getUnreadCount);
-router.put('/:id/read', checkJwt, notificationController.markAsRead);
+router.get('/', notificationController.getNotifications);
+router.get('/unread-count', notificationController.getUnreadCount);
+router.put('/:id/read', notificationController.markAsRead);
 
 module.exports = router;
