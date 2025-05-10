@@ -8,7 +8,8 @@ pipeline {
   environment {
     BACKEND_DIR = 'backend'
     FRONTEND_DIR = 'frontend'
-    NODE_ENV = 'production'
+    //NODE_ENV = 'production'
+    NODE_ENV = 'development'
   }
 
   options {
