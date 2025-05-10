@@ -2,16 +2,17 @@ pipeline {
   agent any
 
   tools {
-    nodejs 'node-18' // Name must match your Jenkins NodeJS installation
+    nodejs 'node-18'  // Must match the Node.js tool name configured in Jenkins
   }
 
   environment {
-    // You can define environment variables here if needed
+    BACKEND_DIR = 'backend'
+    FRONTEND_DIR = 'frontend'
     NODE_ENV = 'production'
   }
 
   options {
-    timeout(time: 10, unit: 'MINUTES') // Avoid infinite builds
+    timeout(time: 10, unit: 'MINUTES') // Prevent stuck builds
   }
 
   stages {
@@ -24,7 +25,7 @@ pipeline {
 
     stage('Install Backend Dependencies') {
       steps {
-        dir('backend') {
+        dir("${env.BACKEND_DIR}") {
           echo '📦 Installing backend dependencies...'
           sh 'npm install'
         }
@@ -33,7 +34,7 @@ pipeline {
 
     stage('Install Frontend Dependencies') {
       steps {
-        dir('frontend') {
+        dir("${env.FRONTEND_DIR}") {
           echo '📦 Installing frontend dependencies...'
           sh 'npm install'
         }
@@ -42,30 +43,29 @@ pipeline {
 
     stage('Build Frontend') {
       steps {
-        dir('frontend') {
-          echo '🏗️ Building frontend...'
-          sh 'npm run build'
+        dir("${env.FRONTEND_DIR}") {
+          echo '🏗️ Building frontend using local Angular CLI...'
+          sh './node_modules/.bin/ng build'
         }
       }
     }
 
     stage('Test (Optional)') {
       steps {
-        echo '🧪 Add test scripts here if needed.'
-        // sh 'npm test'
+        echo '🧪 No tests configured yet — you can add backend/frontend tests here.'
       }
     }
 
     stage('Deploy (Optional)') {
       steps {
-        echo '🚀 Add deployment steps here (e.g., S3, EC2, Render, etc.)'
+        echo '🚀 Add deployment logic here (S3, EC2, Render, etc.)'
       }
     }
   }
 
   post {
     success {
-      echo '✅ Build completed successfully.'
+      echo '✅ Build completed successfully!'
     }
     failure {
       echo '❌ Build failed.'
