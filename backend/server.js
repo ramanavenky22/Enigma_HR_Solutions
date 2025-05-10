@@ -3,13 +3,18 @@ require('dotenv').config();
 require('./config/db'); // Your MySQL connection
 
 const cors = require('cors');
+const { checkJwt, syncUser } = require('./middleware/auth'); // Import checkJwt and syncUser middleware
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Apply checkJwt and syncUser globally to all routes
+app.use(checkJwt);
+app.use(syncUser);
+
 const teamRoutes = require('./routes/teamsRoutes');
-const profileRoutes = require('./routes/profileRoutes');
+const profileRoutes = require('./routes/profileRoutes.js');
 const employeeRoutes = require('./routes/employeeRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 

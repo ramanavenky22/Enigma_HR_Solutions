@@ -10,10 +10,10 @@ const {
 } = require('../controllers/employeeController');
 
 // Employee routes
-router.get('/',checkJwt, getAllEmployees);
-router.get('/:id',checkJwt, checkRole("hr"), getEmployeeById);
-router.post('/',checkJwt, checkRole("hr"), createEmployee);
-router.put('/:id',checkJwt, checkRole("hr"), updateEmployee);
-router.delete('/:id',checkJwt, checkRole("hr"), deleteEmployee);
+router.get('/', getAllEmployees);
+router.get('/:id', checkRole("hr"), getEmployeeById);
+router.post('/', checkRole("hr"), createEmployee);
+router.put('/:id', checkRole("hr"), updateEmployee);
+router.delete('/:id', checkRole("hr"), deleteEmployee);
 
 module.exports = router; 

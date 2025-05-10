@@ -7,6 +7,8 @@ exports.getProfile = async (req, res) => {
     return res.status(400).json({ message: 'Missing empId' });
   }
 
+  console.log('Fetching profile for empId:', empId);
+
   try {
     const [rows] = await db.execute(
       `SELECT 
