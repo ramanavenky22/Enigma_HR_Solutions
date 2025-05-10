@@ -37,27 +37,26 @@ db.connect((err) => {
     process.exit(1);
   }
   console.log('✅ Connected to MySQL DB');
-  
+
   // Test the connection with a simple query
   db.query('SELECT 1', (err, results) => {
     if (err) {
       console.error('Error testing database connection:', err);
     } else {
       console.log('✅ Database connection test successful');
+      initializeNotificationsTable(); // 🚀 Create + seed notifications table
     }
   });
 });
 
-// Convert to promise-based connection with error logging wrapper
 const promiseDb = db.promise();
 
-// Add query wrapper for better error logging
+// Core query wrapper
 const query = async (sql, params) => {
   try {
     console.log('Executing query:', sql);
     console.log('With parameters:', params);
-    
-    // Format dates to MySQL format if needed
+
     if (params) {
       params = params.map(param => {
         if (param instanceof Date) {
@@ -66,16 +65,7 @@ const query = async (sql, params) => {
         return param;
       });
     }
-    
-    // Handle transaction commands
-    if (sql.toLowerCase() === 'start transaction' || 
-        sql.toLowerCase() === 'commit' || 
-        sql.toLowerCase() === 'rollback') {
-      const [results] = await promiseDb.query(sql);
-      return results;
-    }
-    
-    // Handle regular queries
+
     const [results] = await promiseDb.query(sql, params);
     return results;
   } catch (err) {
@@ -86,19 +76,52 @@ const query = async (sql, params) => {
   }
 };
 
-// Start a transaction
-const startTransaction = async () => {
-  await query('START TRANSACTION');
+// Transaction helpers
+const startTransaction = async () => await query('START TRANSACTION');
+const commitTransaction = async () => await query('COMMIT');
+const rollbackTransaction = async () => await query('ROLLBACK');
+
+// 🛠 Table bootstrap for notifications
+const initializeNotificationsTable = async () => {
+  try {
+    await promiseDb.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        \`type\` VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        \`read\` TINYINT(1) DEFAULT 0,
+        action_type VARCHAR(50),
+        action_data JSON
+      );
+    `);
+
+    const [existing] = await promiseDb.query(`SELECT COUNT(*) as count FROM notifications`);
+    if (existing[0].count === 0) {
+      await promiseDb.query(`
+        INSERT INTO notifications (user_id, \`type\`, message, \`read\`, action_type, action_data)
+        VALUES
+          ('auth0|10001', 'employee_joined', 'A new employee has joined your team.', 0, 'profile', '{"id": 10023}'),
+          ('auth0|10001', 'report_ready', 'Your Q2 performance report is now available.', 0, 'report', '{"reportId": 453}'),
+          ('auth0|10001', 'meeting_scheduled', 'Your 1:1 with your manager is scheduled for Friday.', 1, 'meeting', '{"meetingId": 892}'),
+          ('auth0|10002', 'employee_joined', 'Cristina Bouloucos has joined your department.', 0, 'profile', '{"id": 10016}'),
+          ('auth0|10003', 'report_ready', 'Your training report has been finalized.', 1, 'report', '{"reportId": 456}'),
+          ('auth0|10004', 'meeting_scheduled', 'Team sync scheduled for tomorrow at 10 AM.', 0, 'meeting', '{"meetingId": 901}');
+      `);
+      console.log('✅ Notifications table created and seeded with mock data');
+    } else {
+      console.log('ℹ️ Notifications table already has data');
+    }
+  } catch (err) {
+    console.error('❌ Error initializing notifications table:', err);
+  }
 };
 
-// Commit a transaction
-const commitTransaction = async () => {
-  await query('COMMIT');
+module.exports = {
+  db: promiseDb,
+  query,
+  startTransaction,
+  commitTransaction,
+  rollbackTransaction
 };
-
-// Rollback a transaction
-const rollbackTransaction = async () => {
-  await query('ROLLBACK');
-};
-
-module.exports = { db: promiseDb, query, startTransaction, commitTransaction, rollbackTransaction };
