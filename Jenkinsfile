@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   tools {
-    nodejs 'node-18'  // Must match the Node.js tool name configured in Jenkins
+    nodejs 'node-18' // Make sure this matches your configured NodeJS tool in Jenkins
   }
 
   environment {
@@ -12,7 +12,7 @@ pipeline {
   }
 
   options {
-    timeout(time: 10, unit: 'MINUTES') // Prevent stuck builds
+    timeout(time: 10, unit: 'MINUTES') // Prevents long-running stuck builds
   }
 
   stages {
@@ -44,21 +44,21 @@ pipeline {
     stage('Build Frontend') {
       steps {
         dir("${env.FRONTEND_DIR}") {
-          echo '🏗️ Building frontend using local Angular CLI...'
-          sh './node_modules/.bin/ng build'
+          echo '🏗️ Building frontend using local Angular CLI (via npx)...'
+          sh 'npx ng build'
         }
       }
     }
 
     stage('Test (Optional)') {
       steps {
-        echo '🧪 No tests configured yet — you can add backend/frontend tests here.'
+        echo '🧪 Add test steps here if needed (backend/frontend).'
       }
     }
 
     stage('Deploy (Optional)') {
       steps {
-        echo '🚀 Add deployment logic here (S3, EC2, Render, etc.)'
+        echo '🚀 Add deployment logic here (to S3, EC2, etc.).'
       }
     }
   }
