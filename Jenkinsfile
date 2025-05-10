@@ -41,14 +41,15 @@ pipeline {
       }
     }
 
-    stage('Build Frontend') {
-      steps {
-        dir("${env.FRONTEND_DIR}") {
-          echo '🏗️ Building frontend using local Angular CLI (via npx)...'
-          sh 'npx ng build'
-        }
-      }
+stage('Build Frontend') {
+  steps {
+    dir("${env.FRONTEND_DIR}") {
+      echo '🏗️ Building frontend using npx with forced execution...'
+      sh 'npx --yes ng build'
     }
+  }
+}
+
 
     stage('Test (Optional)') {
       steps {
