@@ -135,129 +135,118 @@ const createEmployee = async (req, res) => {
 const updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const { birth_date, first_name, last_name, gender, hire_date, department_no, title, salary } = req.body;
+    const { birth_date, first_name, last_name, gender, hire_date, department, title, salary } = req.body;
     
     if (!id) {
       return res.status(400).json({ error: 'Employee ID is required' });
     }
 
+    // Check if employee exists
+    const employeeCheck = await query('SELECT emp_no FROM employees WHERE emp_no = ?', [id]);
+    if (employeeCheck.length === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
     await startTransaction();
-
-    // Update employee details
-    if (first_name || last_name || gender || birth_date || hire_date) {
-      const updateEmployeeQuery = `
-        UPDATE employees 
-        SET 
-          first_name = COALESCE(?, first_name),
-          last_name = COALESCE(?, last_name),
-          gender = COALESCE(?, gender),
-          birth_date = COALESCE(?, birth_date),
-          hire_date = COALESCE(?, hire_date)
-        WHERE emp_no = ?
-      `;
-      await query(updateEmployeeQuery, [
-        first_name,
-        last_name,
-        gender,
-        birth_date ? new Date(birth_date).toISOString().slice(0, 10) : null,
-        hire_date ? new Date(hire_date).toISOString().slice(0, 10) : null,
-        id
-      ]);
-    }
-
-    // Update title
-    if (title) {
-      const updateTitleQuery = `
-        UPDATE titles 
-        SET title = ? 
-        WHERE emp_no = ? AND to_date = '9999-01-01'
-      `;
-      const result = await query(updateTitleQuery, [title, id]);
-      
-      // If no current title exists, insert one
-      if (result.affectedRows === 0) {
-        const insertTitleQuery = `
-          INSERT INTO titles (emp_no, title, from_date, to_date) 
-          VALUES (?, ?, CURDATE(), '9999-01-01')
+    try {
+      // Update employee details
+      if (first_name || last_name || gender || birth_date || hire_date) {
+        const updateEmployeeQuery = `
+          UPDATE employees 
+          SET 
+            first_name = COALESCE(?, first_name),
+            last_name = COALESCE(?, last_name),
+            gender = COALESCE(?, gender),
+            birth_date = COALESCE(?, birth_date),
+            hire_date = COALESCE(?, hire_date)
+          WHERE emp_no = ?
         `;
-        await query(insertTitleQuery, [id, title]);
-      }
-    }
-
-    // Update salary
-    if (salary) {
-      const updateSalaryQuery = `
-        UPDATE salaries 
-        SET salary = ? 
-        WHERE emp_no = ? AND to_date = '9999-01-01'
-      `;
-      const result = await query(updateSalaryQuery, [salary, id]);
-      
-      // If no current salary exists, insert one
-      if (result.affectedRows === 0) {
-        const insertSalaryQuery = `
-          INSERT INTO salaries (emp_no, salary, from_date, to_date) 
-          VALUES (?, ?, CURDATE(), '9999-01-01')
-        `;
-        await query(insertSalaryQuery, [id, salary]);
-      }
-    }
-
-    // Update department
-    if (department_no) {
-      // Check if department exists
-      const deptCheckQuery = 'SELECT dept_no FROM departments WHERE dept_no = ?';
-      const deptExists = await query(deptCheckQuery, [department_no]);
-      
-      if (deptExists.length === 0) {
-        throw new Error('Invalid department number');
+        await query(updateEmployeeQuery, [
+          first_name,
+          last_name,
+          gender,
+          birth_date ? new Date(birth_date).toISOString().slice(0, 10) : null,
+          hire_date ? new Date(hire_date).toISOString().slice(0, 10) : null,
+          id
+        ]);
       }
 
-      const updateDeptQuery = `
-        UPDATE dept_emp 
-        SET dept_no = ? 
-        WHERE emp_no = ? AND to_date = '9999-01-01'
-      `;
-      const result = await query(updateDeptQuery, [department_no, id]);
-      
-      // If no current department exists, insert one
-      if (result.affectedRows === 0) {
-        const insertDeptQuery = `
-          INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date) 
-          VALUES (?, ?, CURDATE(), '9999-01-01')
-        `;
-        await query(insertDeptQuery, [id, department_no]);
-      }
-
-      // Update dept_manager if employee is a manager
-      const isManagerQuery = `
-        SELECT 1 FROM dept_manager 
-        WHERE emp_no = ? AND to_date = '9999-01-01'
-      `;
-      const isManager = await query(isManagerQuery, [id]);
-      
-      if (isManager.length > 0) {
-        const updateManagerQuery = `
-          UPDATE dept_manager 
-          SET dept_no = ? 
+      // Update title
+      if (title) {
+        const updateTitleQuery = `
+          UPDATE titles 
+          SET title = ? 
           WHERE emp_no = ? AND to_date = '9999-01-01'
         `;
-        await query(updateManagerQuery, [department_no, id]);
+        const result = await query(updateTitleQuery, [title, id]);
+        
+        // If no current title exists, insert one
+        if (result.affectedRows === 0) {
+          const insertTitleQuery = `
+            INSERT INTO titles (emp_no, title, from_date, to_date) 
+            VALUES (?, ?, CURDATE(), '9999-01-01')
+          `;
+          await query(insertTitleQuery, [id, title]);
+        }
       }
-    }
 
-    await commitTransaction();
-    
-    res.json({
-      message: 'Employee updated successfully',
-      emp_no: id
-    });
+      // Update salary
+      if (salary) {
+        const updateSalaryQuery = `
+          UPDATE salaries 
+          SET salary = ? 
+          WHERE emp_no = ? AND to_date = '9999-01-01'
+        `;
+        const result = await query(updateSalaryQuery, [salary, id]);
+        
+        // If no current salary exists, insert one
+        if (result.affectedRows === 0) {
+          const insertSalaryQuery = `
+            INSERT INTO salaries (emp_no, salary, from_date, to_date) 
+            VALUES (?, ?, CURDATE(), '9999-01-01')
+          `;
+          await query(insertSalaryQuery, [id, salary]);
+        }
+      }
+
+      // Update department
+      if (department) {
+        // Check if department exists
+        const deptCheckQuery = 'SELECT dept_no FROM departments WHERE dept_no = ?';
+        const deptExists = await query(deptCheckQuery, [department]);
+        
+        if (deptExists.length === 0) {
+          throw new Error('Invalid department number');
+        }
+
+        // End current department assignment
+        const endCurrentDeptQuery = `
+          UPDATE dept_emp 
+          SET to_date = CURDATE()
+          WHERE emp_no = ? AND to_date = '9999-01-01'
+        `;
+        await query(endCurrentDeptQuery, [id]);
+
+        // Insert new department assignment
+        const insertNewDeptQuery = `
+          INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date)
+          VALUES (?, ?, CURDATE(), '9999-01-01')
+        `;
+        await query(insertNewDeptQuery, [id, department]);
+      }
+
+      await commitTransaction();
+      res.json({ message: 'Employee updated successfully' });
+    } catch (err) {
+      await rollbackTransaction();
+      throw err;
+    }
   } catch (err) {
-    await rollbackTransaction();
     console.error('Error in updateEmployee:', err);
-    res.status(500).json({
+    await rollbackTransaction();
+    res.status(500).json({ 
       error: 'Error updating employee',
-      details: err.message
+      details: err.message 
     });
   }
 };

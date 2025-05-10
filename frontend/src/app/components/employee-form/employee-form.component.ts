@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-import { EmployeeService, NewEmployee, Employee } from '../../services/employee.service';
+import { EmployeeService, NewEmployee, Employee, UpdateEmployee } from '../../services/employee.service';
 
 interface Department {
   dept_no: string;
@@ -218,6 +218,12 @@ export class EmployeeFormComponent implements OnInit {
   loadEmployeeByAuth0Id(auth0Id: string): void {
     this.employeeService.getProfileByAuth0Id(auth0Id).subscribe((employee: Employee) => {
       this.patchEmployeeForm(employee);
+      // Store emp_no in route queryParams for later use
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { emp_no: employee.emp_no },
+        queryParamsHandling: 'merge'
+      });
     });
   }
 
@@ -251,42 +257,45 @@ export class EmployeeFormComponent implements OnInit {
       const id = this.route.snapshot.params['id'];
       const auth0Id = this.route.snapshot.params['auth0_id'];
 
-      const employeeData: NewEmployee = {
+      const employeeData: UpdateEmployee = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         birth_date: formData.birthDate,
         gender: formData.gender,
-        department_no: formData.department,
+        department: formData.department,
         title: formData.title,
         salary: formData.salary
       };
 
       if (this.isEditMode) {
         if (auth0Id) {
-          // If editing by auth0_id, first get the employee details
-          this.employeeService.getProfileByAuth0Id(auth0Id).subscribe((employee: Employee) => {
-            if (employee && employee.emp_no) {
-              this.employeeService.updateEmployee(employee.emp_no, employeeData).subscribe(() => {
-                this.router.navigate(['/profile']);
-              });
-            }
-          });
+          // If editing by auth0_id, we already have the emp_no from loading the form
+          const empId = this.route.snapshot.queryParams['emp_no'];
+          if (empId) {
+            this.employeeService.updateEmployee(parseInt(empId, 10), employeeData).subscribe(() => {
+              this.router.navigate(['/profile']);
+            });
+          }
         } else if (id) {
           // If editing by emp_no
           const empId = parseInt(id, 10);
           this.employeeService.updateEmployee(empId, employeeData).subscribe(() => {
-            this.employeeService.getEmployeeById(empId).subscribe((employee: Employee) => {
-              if (employee?.auth0_id) {
-                this.router.navigate(['/profile']);
-              } else {
-                this.router.navigate(['/dashboard']);
-              }
-            });
+            // No need to check auth0_id again, we already know from form loading
+            this.router.navigate(['/dashboard']);
           });
         }
       } else {
         // If creating new, go to dashboard
-        this.employeeService.createEmployee(employeeData).subscribe(() => {
+        const newEmployeeData: NewEmployee = {
+          first_name: employeeData.first_name || '',
+          last_name: employeeData.last_name || '',
+          birth_date: employeeData.birth_date || '',
+          gender: employeeData.gender || '',
+          department_no: employeeData.department || '',
+          title: employeeData.title || '',
+          salary: employeeData.salary || 0
+        };
+        this.employeeService.createEmployee(newEmployeeData).subscribe(() => {
           this.router.navigate(['/dashboard']);
         });
       }

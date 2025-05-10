@@ -30,7 +30,16 @@ export interface NewEmployee {
   title: string;
   salary: number;
 }
-export type UpdateEmployee = Partial<NewEmployee>;
+
+export interface UpdateEmployee {
+  first_name?: string;
+  last_name?: string;
+  birth_date?: string;
+  gender?: string;
+  department?: string;
+  title?: string;
+  salary?: number;
+}
 
 @Injectable({
   providedIn: 'root'

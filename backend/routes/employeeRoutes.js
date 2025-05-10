@@ -11,11 +11,11 @@ const {
 } = require('../controllers/employeeController');
 
 // Employee routes
-router.get('/',  getAllEmployees);
-router.get('/profile/:auth0_id', getProfileByAuth0Id); // Get profile by auth0_id
-router.get('/:id',  checkRole("hr"), getEmployeeById);
-router.post('/',  checkRole("hr"), createEmployee);
-router.put('/:id',  checkRole("hr"), updateEmployee);
-router.delete('/:id',  checkRole("hr"), deleteEmployee);
+router.get('/', checkJwt, getAllEmployees);
+router.get('/profile/:auth0_id', checkJwt, getProfileByAuth0Id); // Get profile by auth0_id
+router.get('/:id', checkJwt, checkRole('hr'), getEmployeeById);
+router.post('/', checkJwt, checkRole('hr'), createEmployee);
+router.put('/:id', checkJwt, checkRole('hr'), updateEmployee); // checkRole will also allow self-updates
+router.delete('/:id', checkJwt, checkRole('hr'), deleteEmployee);
 
 module.exports = router; 
