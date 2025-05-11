@@ -18,8 +18,8 @@ const enrichUser = (req, res, next) => {
 };
 
 // All team routes are manager-only
-router.get('/team', checkJwt, enrichUser, checkRole('manager'), teamController.getTeamMembers);
-router.get('/team/search', checkJwt, enrichUser, checkRole('manager'), teamController.searchTeamMembers);
-router.get('/team/count', checkJwt, enrichUser, checkRole('manager'), teamController.getTeamCount);
+router.get('/api/team', checkJwt, enrichUser, checkRole(['hr', 'manager']), teamController.getTeamMembers);
+router.get('/api/team/search', checkJwt, enrichUser, checkRole(['hr', 'manager']), teamController.searchTeamMembers);
+router.get('/api/team/count', checkJwt, enrichUser, checkRole(['hr', 'manager']), teamController.getTeamCount);
 
 module.exports = router;

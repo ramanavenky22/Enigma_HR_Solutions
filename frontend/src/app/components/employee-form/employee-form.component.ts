@@ -234,18 +234,19 @@ export class EmployeeFormComponent implements OnInit {
   }
 
   patchEmployeeForm(employee: Employee): void {
-    // Convert date string back to YYYY-MM-DD format for the input
-    const birthDate = new Date(employee.birth_date).toISOString().split('T')[0];
-    
-    // Find the matching department based on department_name
-    const dept = this.departments.find((d: Department) => d.dept_name === employee.department_name);
+    // Format birth_date to local date string
+    let birthDate = employee.birth_date;
+    if (birthDate) {
+      const date = new Date(birthDate);
+      birthDate = date.toISOString().split('T')[0];
+    }
 
     this.employeeForm.patchValue({
       firstName: employee.first_name,
       lastName: employee.last_name,
       birthDate: birthDate,
       gender: employee.gender,
-      department: dept?.dept_no || '', // Use the found department's dept_no
+      department: employee.dept_no,
       title: employee.title,
       salary: employee.salary
     });
@@ -257,10 +258,17 @@ export class EmployeeFormComponent implements OnInit {
       const id = this.route.snapshot.params['id'];
       const auth0Id = this.route.snapshot.params['auth0_id'];
 
+      // Ensure dates are in YYYY-MM-DD format without timezone conversion
+      const formatDate = (date: string | undefined) => {
+        if (!date) return undefined;
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+
       const employeeData: UpdateEmployee = {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        birth_date: formData.birthDate,
+        birth_date: formatDate(formData.birthDate),
         gender: formData.gender,
         department: formData.department,
         title: formData.title,

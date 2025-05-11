@@ -1,7 +1,7 @@
 const { query, startTransaction, commitTransaction, rollbackTransaction } = require('../config/db');
 
 // Get all employees
-const getAllEmployees = async (req, res) => {
+exports.getAllEmployees = async (req, res) => {
   try {
     const { title, department } = req.query;
     let queryStr = `
@@ -52,7 +52,7 @@ const getAllEmployees = async (req, res) => {
 };
 
 // Get employee by emp_no
-const getEmployeeById = async (req, res) => {
+exports.getEmployeeById = async (req, res) => {
   try {
     const { id } = req.params;
     const queryStr = `
@@ -94,7 +94,7 @@ const getEmployeeById = async (req, res) => {
 };
 
 // Create new employee
-const createEmployee = async (req, res) => {
+exports.createEmployee = async (req, res) => {
   try {
     const { emp_no, birth_date, first_name, last_name, gender, hire_date, department_no, title, salary } = req.body;
     
@@ -102,9 +102,8 @@ const createEmployee = async (req, res) => {
     const parsedBirthDate = new Date(birth_date);
     const parsedHireDate = new Date(hire_date);
     
-    // Insert into employees table
-    const employeeQuery = 'INSERT INTO employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (?, ?, ?, ?, ?, ?)';
-    await query(employeeQuery, [emp_no, parsedBirthDate, first_name, last_name, gender, parsedHireDate]);
+    // Start transaction
+    await startTransaction();
 
     // Insert into dept_emp table
     const deptEmpQuery = 'INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date) VALUES (?, ?, ?, ?)';
@@ -132,7 +131,7 @@ const createEmployee = async (req, res) => {
 };
 
 // Update employee
-const updateEmployee = async (req, res) => {
+exports.updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
     const { birth_date, first_name, last_name, gender, hire_date, department, title, salary } = req.body;
@@ -211,48 +210,96 @@ const updateEmployee = async (req, res) => {
 
       // Update department
       if (department) {
-        // Check if department exists
-        const deptCheckQuery = 'SELECT dept_no FROM departments WHERE dept_no = ?';
-        const deptExists = await query(deptCheckQuery, [department]);
-        
-        if (deptExists.length === 0) {
-          throw new Error('Invalid department number');
+        try {
+          console.log('Starting department update for:', { emp_no: id, department });
+
+          // Check if department exists
+          const deptCheckQuery = 'SELECT dept_no FROM departments WHERE dept_no = ?';
+          const deptExists = await query(deptCheckQuery, [department]);
+          console.log('Department check result:', { deptExists });
+          
+          if (deptExists.length === 0) {
+            throw new Error('Invalid department number');
+          }
+
+          // Delete any existing records for this employee-department combination
+          const deleteExistingQuery = `
+            DELETE FROM dept_emp 
+            WHERE emp_no = ? AND dept_no = ?
+          `;
+          await query(deleteExistingQuery, [id, department]);
+          console.log('Deleted any existing records');
+
+          // End any current assignments in other departments
+          const endCurrentAssignmentsQuery = `
+            UPDATE dept_emp 
+            SET to_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            WHERE emp_no = ? AND to_date = '9999-01-01'
+          `;
+          await query(endCurrentAssignmentsQuery, [id]);
+          console.log('Ended current assignments');
+
+          // Insert the new assignment
+          const insertNewDeptQuery = `
+            INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date)
+            VALUES (?, ?, CURDATE(), '9999-01-01')
+          `;
+          await query(insertNewDeptQuery, [id, department]);
+          console.log('Inserted new department assignment');
+
+        } catch (deptErr) {
+          console.error('Department update error:', { 
+            error: deptErr.message,
+            stack: deptErr.stack,
+            emp_no: id,
+            department
+          });
+          throw new Error(`Department update failed: ${deptErr.message}`);
         }
-
-        // End current department assignment
-        const endCurrentDeptQuery = `
-          UPDATE dept_emp 
-          SET to_date = CURDATE()
-          WHERE emp_no = ? AND to_date = '9999-01-01'
-        `;
-        await query(endCurrentDeptQuery, [id]);
-
-        // Insert new department assignment
-        const insertNewDeptQuery = `
-          INSERT INTO dept_emp (emp_no, dept_no, from_date, to_date)
-          VALUES (?, ?, CURDATE(), '9999-01-01')
-        `;
-        await query(insertNewDeptQuery, [id, department]);
       }
 
       await commitTransaction();
       res.json({ message: 'Employee updated successfully' });
     } catch (err) {
+      console.error('Error in inner try block:', err);
       await rollbackTransaction();
       throw err;
     }
+
+    try {
+      // If we get here, commit the transaction
+      await commitTransaction();
+      return res.json({ message: 'Employee updated successfully' });
+    } catch (commitErr) {
+      console.error('Error committing transaction:', commitErr);
+      try {
+        await rollbackTransaction();
+      } catch (rollbackErr) {
+        console.error('Error rolling back:', rollbackErr);
+      }
+      return res.status(500).json({ 
+        error: 'Error committing transaction',
+        details: commitErr.message 
+      });
+    }
   } catch (err) {
     console.error('Error in updateEmployee:', err);
-    await rollbackTransaction();
-    res.status(500).json({ 
-      error: 'Error updating employee',
-      details: err.message 
-    });
+    try {
+      await rollbackTransaction();
+    } catch (rollbackErr) {
+      console.error('Error rolling back:', rollbackErr);
+    }
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        error: 'Error updating employee',
+        details: err.message 
+      });
+    }
   }
 };
 
 // Delete employee
-const deleteEmployee = async (req, res) => {
+exports.deleteEmployee = async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -285,15 +332,19 @@ const deleteEmployee = async (req, res) => {
     }
   } catch (error) {
     console.error('Error deleting employee:', error);
-    res.status(500).json({ error: 'Error deleting employee', details: error.message });
+    return res.status(500).json({ error: 'Error deleting employee', details: error.message });
   }
 };
 
 // Get employee profile by auth0_id
-const getProfileByAuth0Id = async (req, res) => {
+exports.getProfileByAuth0Id = async (req, res) => {
   try {
-    const auth0_id = decodeURIComponent(req.params.auth0_id);
-    const queryStr = `
+    const auth0Id = req.params.auth0_id;
+    console.log('Executing query: getEmployeeByAuth0Id');
+    console.log('With parameters:', [auth0Id]);
+
+    const result = await query(
+      `
       SELECT 
         e.emp_no,
         DATE_FORMAT(e.birth_date, '%Y-%m-%d') as birth_date,
@@ -314,29 +365,20 @@ const getProfileByAuth0Id = async (req, res) => {
       LEFT JOIN dept_manager dm ON de.dept_no = dm.dept_no AND dm.to_date = '9999-01-01'
       LEFT JOIN employees m ON dm.emp_no = m.emp_no
       WHERE e.auth0_id = ?
-    `;
-    
-    const results = await query(queryStr, [auth0_id]);
-    
-    if (results.length === 0) {
+    `,
+      [auth0Id]
+    );
+
+    if (!result || result.length === 0) {
       return res.status(404).json({ error: 'Employee not found' });
     }
-    
-    res.json(results[0]);
+
+    return res.json(result[0]);
   } catch (err) {
-    console.error('Error in getProfileByAuth0Id:', err);
-    res.status(500).json({ 
-      error: 'Error fetching employee profile',
+    console.error('Error in getEmployeeByAuth0Id:', err);
+    return res.status(500).json({ 
+      error: 'Error fetching employee',
       details: err.message 
     });
   }
-};
-
-module.exports = {
-  getAllEmployees,
-  getEmployeeById,
-  createEmployee,
-  updateEmployee,
-  deleteEmployee,
-  getProfileByAuth0Id
 };
