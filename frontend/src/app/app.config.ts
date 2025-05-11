@@ -12,8 +12,8 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([authInterceptor])
     ),
     provideAuth0({
-      domain: 'dev-hxq2jg08pca7x1u4.us.auth0.com',
-      clientId: 'EQrggKzdvxoJLY2e6H3rtdPWa5aUOQd9',
+      domain: 'dev-20qstdnd60if2bvw.us.auth0.com',
+      clientId: 'Vlxn6sZT7yncZyWCLAwRufQq5tfGxFCg',
       authorizationParams: {
         redirect_uri: window.location.origin,
         audience: 'https://hr-portal/api',
