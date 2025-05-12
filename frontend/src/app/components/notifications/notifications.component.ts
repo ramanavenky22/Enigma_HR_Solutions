@@ -27,10 +27,44 @@ export class NotificationsComponent implements OnInit {
   }
 
   loadNotifications() {
-    this.notificationService.getNotifications().subscribe(notifications => {
-      this.notifications = notifications;
-      this.applyFilter();
-    });
+    this.notifications = [
+      {
+        id: 1,
+        icon: '🔔',
+        message: 'Welcome to the HR Portal! Stay tuned for updates.',
+        time: '2025-05-12T13:35:04-07:00',
+        read: false
+      },
+      {
+        id: 2,
+        icon: '📢',
+        message: 'Your profile was updated successfully.',
+        time: '2025-05-12T13:30:00-07:00',
+        read: true
+      },
+      {
+        id: 3,
+        icon: '✅',
+        message: 'You have a new onboarding task.',
+        time: '2025-05-12T13:00:00-07:00',
+        read: false
+      },
+      {
+        id: 4,
+        icon: '🚨',
+        message: 'Urgent: Please update your emergency contact information.',
+        time: '2025-05-12T12:45:00-07:00',
+        read: true
+      },
+      {
+        id: 5,
+        icon: '🎉',
+        message: 'Congratulations on your 2-year work anniversary!',
+        time: '2025-05-11T09:00:00-07:00',
+        read: false
+      }
+    ];
+    this.applyFilter();
   }
 
   setFilter(filter: string) {
