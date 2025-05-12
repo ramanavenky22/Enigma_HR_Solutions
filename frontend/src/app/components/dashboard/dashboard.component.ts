@@ -114,13 +114,7 @@ export class DashboardComponent implements OnInit {
     }
   ];
 
-  // Update unreadNotifications count based on dummy notifications
-  ngOnInit() {
-    this.unreadNotifications = this.notifications.filter(n => !n.read).length;
-    this.loadDashboardData();
-    this.loadEmployees();
-    this.loadStatistics();
-  }
+  
   // Dashboard stats
   totalEmployees: number = 0;
   departments: string[] = [];
@@ -173,6 +167,7 @@ export class DashboardComponent implements OnInit {
     this.loadEmployees();
     this.loadActivities();
     this.loadStatistics();
+    this.unreadNotifications = this.notifications.filter(n => !n.read).length;
 
     // Check if user has HR role
     this.auth.user$.subscribe(user => {
