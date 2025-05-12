@@ -234,22 +234,17 @@ export class EmployeeFormComponent implements OnInit {
   }
 
   patchEmployeeForm(employee: Employee): void {
-    // Format birth_date to local date string
-    let birthDate = employee.birth_date;
-    if (birthDate) {
-      const date = new Date(birthDate);
-      birthDate = date.toISOString().split('T')[0];
-    }
-
+    console.log('Received employee data:', employee);
     this.employeeForm.patchValue({
       firstName: employee.first_name,
       lastName: employee.last_name,
-      birthDate: birthDate,
+      birthDate: employee.birth_date,
       gender: employee.gender,
       department: employee.dept_no,
       title: employee.title,
       salary: employee.salary
     });
+    console.log('Form values after patch:', this.employeeForm.value);
   }
 
   onSubmit(): void {
@@ -258,11 +253,18 @@ export class EmployeeFormComponent implements OnInit {
       const id = this.route.snapshot.params['id'];
       const auth0Id = this.route.snapshot.params['auth0_id'];
 
-      // Ensure dates are in YYYY-MM-DD format without timezone conversion
+      // Keep the original date string if it's already in YYYY-MM-DD format
       const formatDate = (date: string | undefined) => {
         if (!date) return undefined;
+        // If date is already in YYYY-MM-DD format, return as is
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          return date;
+        }
+        // Otherwise, format it
         const d = new Date(date);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+        const adjustedDate = new Date(d.getTime() + userTimezoneOffset);
+        return `${adjustedDate.getFullYear()}-${String(adjustedDate.getMonth() + 1).padStart(2, '0')}-${String(adjustedDate.getDate()).padStart(2, '0')}`;
       };
 
       const employeeData: UpdateEmployee = {

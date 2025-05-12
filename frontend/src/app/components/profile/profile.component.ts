@@ -84,7 +84,10 @@ export class ProfileComponent implements OnInit {
 
   formatDate(date: string | undefined): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    // Add timezone offset to prevent date shift
+    const d = new Date(date);
+    const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

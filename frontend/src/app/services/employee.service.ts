@@ -53,27 +53,44 @@ export class EmployeeService {
     return this.http.get<Employee[]>(this.apiUrl, {
       params: filters || {}
     }).pipe(
-      map((employees: Employee[]) => employees.map((emp: Employee) => ({
-        ...emp,
-        // Format dates for display
-        birth_date: new Date(emp.birth_date).toLocaleDateString(),
-        hire_date: new Date(emp.hire_date).toLocaleDateString(),
-        // Format salary
-        salary: emp.salary || 0
-      })))
+      map((employees: Employee[]) => employees.map((emp: Employee) => {
+        // Add timezone offset to prevent date shift
+        const adjustDate = (date: string) => {
+          const d = new Date(date);
+          const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString();
+        };
+
+        return {
+          ...emp,
+          birth_date: adjustDate(emp.birth_date),
+          hire_date: adjustDate(emp.hire_date),
+          salary: emp.salary || 0
+        };
+      }))
     );
   }
 
   getEmployeeById(id: number): Observable<Employee> {
     return this.http.get<Employee>(`${this.apiUrl}/${id}`).pipe(
-      map((employee: any) => ({
-        ...employee,
-        department_name: employee.department_name || 'No Department Assigned',
-        dept_no: employee.dept_no,
-        birth_date: employee.birth_date ? new Date(employee.birth_date).toLocaleDateString() : 'N/A',
-        hire_date: employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : 'N/A',
-        salary: employee.salary || 0
-      }) as Employee)
+      map((employee: any) => {
+        // Add timezone offset to prevent date shift
+        const adjustDate = (date: string | undefined) => {
+          if (!date) return 'N/A';
+          const d = new Date(date);
+          const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString();
+        };
+
+        return {
+          ...employee,
+          department_name: employee.department_name || 'No Department Assigned',
+          dept_no: employee.dept_no,
+          birth_date: adjustDate(employee.birth_date),
+          hire_date: adjustDate(employee.hire_date),
+          salary: employee.salary || 0
+        } as Employee;
+      })
     );
   }
 
@@ -83,8 +100,9 @@ export class EmployeeService {
         ...employee,
         department_name: employee.department_name || 'No Department Assigned',
         dept_no: employee.dept_no || '',
-        birth_date: employee.birth_date ? new Date(employee.birth_date).toLocaleDateString() : 'N/A',
-        hire_date: employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : 'N/A',
+        // Keep raw date format for forms
+        birth_date: employee.birth_date || '',
+        hire_date: employee.hire_date || '',
         salary: employee.salary || 0
       }) as Employee)
     );
