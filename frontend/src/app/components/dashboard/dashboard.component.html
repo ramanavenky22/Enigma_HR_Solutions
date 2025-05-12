@@ -9,6 +9,26 @@
 
   <div class="dashboard-content">
     <div class="main-content">
+      <!-- Quick Actions Section -->
+      <div class="dashboard-card quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons-container">
+          <button class="action-button" (click)="addEmployee()">
+            <span class="icon">➕</span>
+            Add Employee
+          </button>
+          <button class="action-button" (click)="viewTeam()">
+            <span class="icon">👥</span>
+            View Team
+          </button>
+          <button class="action-button" (click)="viewNotifications()">
+            <span class="icon">🔔</span>
+            Notifications
+            <span class="notification-badge" *ngIf="unreadNotifications > 0">{{unreadNotifications}}</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Employee Directory Section -->
       <div class="dashboard-card employee-list">
         <h2>Employee Directory</h2>
@@ -151,33 +171,31 @@
           </div>
         </div>
       </div>
-      <div class="dashboard-card quick-actions">
-        <h2>Quick Actions</h2>
-        <div class="action-buttons">
-          <button (click)="addEmployee()" class="action-button">
-            <span class="icon">➕</span>
-            Add Employee
-          </button>
-          <button (click)="viewTeam()" class="action-button">
-            <span class="icon">👥</span>
-            View Team
-          </button>
-          <button (click)="viewNotifications()" class="action-button">
-            <span class="icon">🔔</span>
-            Notifications
-            <span class="notification-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+
+
+      <div class="dashboard-card announcements">
+        <div class="announcements-header">
+          <h2>Announcements</h2>
+          <button *ngIf="isHR" 
+            class="post-announcement-btn" 
+            (click)="openAnnouncementDialog('create')">
+            + New
           </button>
         </div>
-      </div>
 
-      <div class="dashboard-card recent-activity">
-        <h2>Recent Activity</h2>
-        <div class="activity-list">
-          <div class="activity-item" *ngFor="let activity of recentActivities">
-            <span class="activity-icon">{{ activity.icon }}</span>
-            <div class="activity-details">
-              <span class="activity-title">{{ activity.title }}</span>
-              <span class="activity-time">{{ activity.time }}</span>
+        <div class="announcements-list">
+          <div class="announcement-item" *ngFor="let activity of recentActivities">
+            <div class="announcement-content">
+              <h3 class="announcement-title">{{activity.title}}</h3>
+              <p class="announcement-description" *ngIf="activity.description">{{activity.description}}</p>
+              <div class="announcement-meta">
+                <span class="meta-time">{{activity.time}}</span>
+                <span class="meta-author" *ngIf="activity.created_by">by {{activity.created_by}}</span>
+              </div>
+            </div>
+            <div class="action-buttons" *ngIf="isHR">
+              <button class="action-btn" (click)="openAnnouncementDialog('edit', activity)">Edit</button>
+              <button class="action-btn delete" (click)="deleteActivity(activity.id)" [attr.data-id]="activity.id">Delete</button>
             </div>
           </div>
         </div>

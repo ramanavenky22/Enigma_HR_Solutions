@@ -15,6 +15,13 @@ const checkJwt = jwt({
   algorithms: ['RS256']
 });
 
+const getRoleFromTitle = (title) => {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('hr')) return 'HR';
+  if (titleLower.includes('manager')) return 'Manager';
+  return 'Employee';
+};
+
 const syncUser = async (req, res, next) => {
   try {
     const sub = req.auth?.sub;
@@ -28,10 +35,15 @@ const syncUser = async (req, res, next) => {
     const [first_name, ...rest] = fullName.trim().split(' ');
     const last_name = rest.join(' ') || '';
 
-    // Check if the user already exists in the employees table
-    const [existingUser] = await query('SELECT emp_no FROM employees WHERE auth0_id = ?', [sub]);
+    // Check if the user already exists in the employees table and get their title
+    const [existingUser] = await query(`
+      SELECT e.emp_no, t.title 
+      FROM employees e
+      LEFT JOIN titles t ON e.emp_no = t.emp_no AND t.to_date = '9999-01-01'
+      WHERE e.auth0_id = ?
+    `, [sub]);
 
-    if (!existingUser || existingUser.length === 0) {
+    if (!existingUser) {
       // Insert the user into the employees table
       const insertQuery = `
         INSERT INTO employees (auth0_id, first_name, last_name, hire_date)
@@ -39,6 +51,12 @@ const syncUser = async (req, res, next) => {
       `;
       await query(insertQuery, [sub, first_name, last_name]);
       console.log(`🆕 User ${first_name} ${last_name} added to the database.`);
+    }
+
+    // Assign role based on title
+    if (existingUser?.title) {
+      const role = getRoleFromTitle(existingUser.title);
+      req.auth['https://hr-portal.com/roles'] = [role];
     }
 
     next(); // Proceed to next route

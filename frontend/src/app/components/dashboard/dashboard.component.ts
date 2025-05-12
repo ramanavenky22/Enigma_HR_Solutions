@@ -1,14 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { EmployeeService, Employee } from '../../services/employee.service';
+import { ActivityService, Activity } from '../../services/activity.service';
+import { AuthService } from '@auth0/auth0-angular';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { AnnouncementDialogComponent } from '../announcement-dialog/announcement-dialog.component';
 
-interface Activity {
-  icon: string;
+interface ActivityDisplay {
+  id: string;
   title: string;
   time: string;
+  description?: string;
+  created_by?: string;
 }
 
 interface SalaryTrend {
@@ -29,15 +35,17 @@ interface EmployeeStats {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+  styleUrls: ['./dashboard.component.css', './recent-activity.css']
 })
 export class DashboardComponent implements OnInit {
   // Dashboard stats
   totalEmployees: number = 0;
   departments: string[] = [];
-  recentActivities: Activity[] = [];
+  recentActivities: ActivityDisplay[] = [];
+  isHR: boolean = false;
+
   
   // Employee list and filters
   employees: Employee[] = [];
@@ -66,7 +74,10 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private activityService: ActivityService,
+    private dialog: MatDialog,
+    private auth: AuthService
   ) {
     // Set up search debounce
     this.searchSubject
@@ -77,10 +88,19 @@ export class DashboardComponent implements OnInit {
       .subscribe(term => this.filterEmployees());
   }
 
-  ngOnInit() {
-    this.loadDashboardData();
+  ngOnInit(): void {
     this.loadEmployees();
+    this.loadActivities();
     this.loadStatistics();
+
+    // Check if user has HR role
+    this.auth.user$.subscribe(user => {
+      console.log('User roles:', user?.['https://hr-portal.com/roles']);
+      console.log('Full user object:', user);
+      const roles = user?.['https://hr-portal.com/roles'] || [];
+      this.isHR = roles.some((role: string) => role.toLowerCase() === 'hr') || false;
+      console.log('Is HR:', this.isHR);
+    });
   }
 
   loadEmployees() {
@@ -167,12 +187,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  loadDashboardData() {
-    this.recentActivities = [
-      { icon: '👤', title: 'Loading statistics...', time: 'Just now' }
-    ];
-  }
-
   updatePaginatedEmployees() {
     this.loadEmployees();
   }
@@ -200,27 +214,9 @@ export class DashboardComponent implements OnInit {
         this.averageSalary = stats.salaryStatistics.average;
         this.minSalary = stats.salaryStatistics.minimum;
         this.maxSalary = stats.salaryStatistics.maximum;
-
-        this.recentActivities = [
-          { 
-            icon: '👥', 
-            title: `${stats.totalEmployees} Total Employees`, 
-            time: 'Current' 
-          },
-          { 
-            icon: '📊', 
-            title: `Gender Ratio: ${Math.round(stats.genderDistribution.male_count * 100 / stats.totalEmployees)}% Male`, 
-            time: 'Current' 
-          }
-        ];
       },
       error: (error: any) => {
         console.error('Error loading statistics:', error);
-        this.recentActivities = [{ 
-          icon: '❌', 
-          title: 'Error loading statistics', 
-          time: 'Just now' 
-        }];
       }
     });
 
@@ -267,8 +263,92 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  goBack() {
-    this.router.navigate(['/home']);
+  loadActivities(): void {
+    this.activityService.getActivities().subscribe({
+      next: (activities) => {
+        this.recentActivities = activities.map(activity => {
+          if (!activity.id) {
+            console.error('Activity missing id:', activity);
+          }
+          return {
+            id: String(activity.id), // Convert to string since our interface expects string
+            title: activity.title,
+            description: activity.description,
+            time: this.formatRelativeTime(new Date(activity.timestamp)),
+            created_by: activity.created_by
+          };
+        });
+      },
+      error: (error) => console.error('Error loading activities:', error)
+    });
+  }
+
+  openAnnouncementDialog(mode: 'create' | 'edit' | 'view', announcement?: ActivityDisplay): void {
+    const dialogRef = this.dialog.open(AnnouncementDialogComponent, {
+      width: '500px',
+      data: { mode, announcement }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        if (mode === 'edit' && announcement?.id) {
+          this.activityService.updateActivity(announcement.id, result).subscribe({
+            next: () => this.loadActivities(),
+            error: (error: any) => console.error('Error updating announcement:', error)
+          });
+        } else {
+          this.activityService.createActivity({
+            ...result,
+            created_by: 'HR'
+          }).subscribe({
+            next: () => this.loadActivities(),
+            error: (error: any) => console.error('Error creating announcement:', error)
+          });
+        }
+      }
+    });
+  }
+
+
+
+  editActivity(activity: ActivityDisplay): void {
+    this.openAnnouncementDialog('edit', activity);
+  }
+
+  deleteActivity(id: string): void {
+    if (!id) {
+      console.error('No activity ID provided');
+      return;
+    }
+    
+    if (confirm('Are you sure you want to delete this announcement?')) {
+      console.log('Deleting activity with ID:', id);
+      this.activityService.deleteActivity(id).subscribe({
+        next: () => {
+          this.loadActivities();
+        },
+        error: (error: any) => console.error('Error deleting activity:', error)
+      });
+    }
+  }
+
+  goBack(): void {
+    this.router.navigate(['/']);
+  }
+
+  private formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   }
 
   addEmployee() {
