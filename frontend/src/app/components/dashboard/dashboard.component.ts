@@ -34,6 +34,87 @@ interface EmployeeStats {
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
+  // Dummy notifications for dashboard
+  notifications = [
+    {
+      id: 1,
+      icon: '🔔',
+      message: 'Welcome to the HR Dashboard! Stay tuned for important updates.',
+      time: '2025-05-12T13:35:04-07:00',
+      read: false
+    },
+    {
+      id: 2,
+      icon: '📢',
+      message: 'Your profile was updated successfully.',
+      time: '2025-05-12T13:30:00-07:00',
+      read: true
+    },
+    {
+      id: 3,
+      icon: '✅',
+      message: 'You have been assigned a new onboarding task.',
+      time: '2025-05-12T13:00:00-07:00',
+      read: false
+    },
+    {
+      id: 4,
+      icon: '🚨',
+      message: 'Urgent: Please update your emergency contact information.',
+      time: '2025-05-12T12:45:00-07:00',
+      read: true
+    },
+    {
+      id: 5,
+      icon: '🎉',
+      message: 'Congratulations on your 2-year work anniversary!',
+      time: '2025-05-11T09:00:00-07:00',
+      read: false
+    },
+    {
+      id: 6,
+      icon: '💼',
+      message: 'HR Policy update: Please review the new remote work guidelines.',
+      time: '2025-05-10T16:20:00-07:00',
+      read: true
+    },
+    {
+      id: 7,
+      icon: '📝',
+      message: 'Performance review period starts next week.',
+      time: '2025-05-09T10:30:00-07:00',
+      read: false
+    },
+    {
+      id: 8,
+      icon: '🏆',
+      message: 'You have been nominated for Employee of the Month!',
+      time: '2025-05-08T14:15:00-07:00',
+      read: true
+    },
+    {
+      id: 9,
+      icon: '📅',
+      message: 'Upcoming holiday: Office closed on May 20th.',
+      time: '2025-05-07T08:00:00-07:00',
+      read: false
+    },
+    {
+      id: 10,
+      icon: '🔗',
+      message: 'New resources added to the HR portal. Check them out!',
+      time: '2025-05-06T17:45:00-07:00',
+      read: true
+    }
+  ];
+
+  // Update unreadNotifications count based on dummy notifications
+  ngOnInit() {
+    this.unreadNotifications = this.notifications.filter(n => !n.read).length;
+    this.loadDashboardData();
+    this.loadEmployees();
+    this.loadStatistics();
+  }
   // Dashboard stats
   totalEmployees: number = 0;
   departments: string[] = [];
@@ -77,11 +158,7 @@ export class DashboardComponent implements OnInit {
       .subscribe(term => this.filterEmployees());
   }
 
-  ngOnInit() {
-    this.loadDashboardData();
-    this.loadEmployees();
-    this.loadStatistics();
-  }
+
 
   loadEmployees() {
     const filters: { 
