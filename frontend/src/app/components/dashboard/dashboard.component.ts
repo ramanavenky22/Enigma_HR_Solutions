@@ -83,20 +83,41 @@ export class DashboardComponent implements OnInit {
   }
 
   loadEmployees() {
-    const filters: { title?: string; department?: string } = {};
+    const filters: { 
+      title?: string; 
+      department?: string; 
+      search?: string;
+      page?: number;
+      limit?: number;
+    } = {
+      page: this.currentPage,
+      limit: this.pageSize
+    };
+
     if (this.selectedTitle) filters.title = this.selectedTitle;
     if (this.selectedDepartment) filters.department = this.selectedDepartment;
+    if (this.searchTerm && this.searchTerm.length >= 3) filters.search = this.searchTerm;
 
     this.employeeService.getAllEmployees(filters).subscribe({
-      next: (employees) => {
+      next: (response) => {
+        // Ensure we have arrays to work with
+        const employees = response.employees || [];
         this.employees = employees;
+        this.filteredEmployees = employees;
+        this.totalPages = response.totalPages || 1;
+        this.currentPage = response.page || 1;
         
-        // Extract unique departments and titles
-        this.departments = [...new Set(employees.map(emp => emp.department_name))];
-        this.titles = [...new Set(employees.map(emp => emp.title))];
-        
-        // Update pagination
-        this.updatePaginatedEmployees(employees);
+        // Extract unique departments and titles if not already loaded
+        if (!this.departments.length) {
+          this.departments = [...new Set(employees
+            .filter(emp => emp.department_name)
+            .map(emp => emp.department_name))];
+        }
+        if (!this.titles.length) {
+          this.titles = [...new Set(employees
+            .filter(emp => emp.title)
+            .map(emp => emp.title))];
+        }
       },
       error: (error) => {
         console.error('Error loading employees:', error);
@@ -107,22 +128,14 @@ export class DashboardComponent implements OnInit {
 
   onSearch(term: string) {
     this.searchTerm = term;
-    this.filterEmployees();
+    this.currentPage = 1; // Reset to first page on new search
+    if (term.length >= 3 || term.length === 0) {
+      this.loadEmployees();
+    }
   }
 
   filterEmployees() {
-    // Only apply client-side filtering for search term
-    // Department and title filtering are handled by the API
-    if (this.searchTerm) {
-      const filtered = this.employees.filter(employee => {
-        const fullName = `${employee.first_name} ${employee.last_name}`.toLowerCase();
-        return fullName.includes(this.searchTerm.toLowerCase());
-      });
-      this.updatePaginatedEmployees(filtered);
-    } else {
-      // If only department or title filters are active, reload from API
-      this.loadEmployees();
-    }
+    this.loadEmployees();
   }
 
   viewProfile(empNo: number) {
@@ -159,17 +172,14 @@ export class DashboardComponent implements OnInit {
     ];
   }
 
-  updatePaginatedEmployees(employees: Employee[]) {
-    this.totalPages = Math.ceil(employees.length / this.pageSize);
-    const start = (this.currentPage - 1) * this.pageSize;
-    const end = start + this.pageSize;
-    this.filteredEmployees = employees.slice(start, end);
+  updatePaginatedEmployees() {
+    this.loadEmployees();
   }
 
   goToPage(page: number) {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
-      this.filterEmployees();
+      this.loadEmployees();
     }
   }
 

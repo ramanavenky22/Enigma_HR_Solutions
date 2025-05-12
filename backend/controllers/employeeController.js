@@ -3,7 +3,20 @@ const { query, startTransaction, commitTransaction, rollbackTransaction } = requ
 // Get all employees
 exports.getAllEmployees = async (req, res) => {
   try {
-    const { title, department } = req.query;
+    const { title, department, search, page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // First, get total count for pagination
+    let countQuery = `
+      SELECT COUNT(DISTINCT e.emp_no) as total
+      FROM employees e
+      LEFT JOIN dept_emp de ON e.emp_no = de.emp_no AND de.to_date = '9999-01-01'
+      LEFT JOIN departments d ON de.dept_no = d.dept_no
+      LEFT JOIN titles t ON e.emp_no = t.emp_no AND t.to_date = '9999-01-01'
+      WHERE 1=1
+    `;
+
+    // Main query for employee data
     let queryStr = `
       SELECT 
         e.emp_no,
@@ -27,21 +40,50 @@ exports.getAllEmployees = async (req, res) => {
     `;
     
     const params = [];
+    const countParams = [];
 
     if (title) {
-      queryStr += ' AND t.title = ?';
+      const clause = ' AND t.title = ?';
+      queryStr += clause;
+      countQuery += clause;
       params.push(title);
+      countParams.push(title);
     }
     
     if (department) {
-      queryStr += ' AND d.dept_name = ?';
+      const clause = ' AND d.dept_name = ?';
+      queryStr += clause;
+      countQuery += clause;
       params.push(department);
+      countParams.push(department);
     }
 
-    queryStr += ' ORDER BY e.emp_no LIMIT 20';
+    if (search && search.length >= 3) {
+      const searchTerm = search.toLowerCase();
+      const clause = ` AND (LOWER(e.first_name) LIKE ? OR 
+                         LOWER(e.last_name) LIKE ? OR 
+                         LOWER(CONCAT(e.first_name, ' ', e.last_name)) LIKE ? OR
+                         LOWER(t.title) LIKE ? OR 
+                         LOWER(d.dept_name) LIKE ?)`;
+      queryStr += clause;
+      countQuery += clause;
+      const likeSearch = `%${searchTerm}%`;
+      params.push(likeSearch, likeSearch, likeSearch, likeSearch, likeSearch);
+      countParams.push(likeSearch, likeSearch, likeSearch, likeSearch, likeSearch);
+    }
 
+    queryStr += ' ORDER BY e.emp_no LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+
+    const [countResult] = await query(countQuery, countParams);
     const results = await query(queryStr, params);
-    res.json(results);
+
+    res.json({
+      employees: results,
+      total: countResult.total,
+      page: parseInt(page),
+      totalPages: Math.ceil(countResult.total / limit)
+    });
   } catch (err) {
     console.error('Error in getAllEmployees:', err);
     res.status(500).json({ 

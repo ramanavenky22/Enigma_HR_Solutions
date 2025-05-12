@@ -235,12 +235,30 @@ export class EmployeeFormComponent implements OnInit {
 
   patchEmployeeForm(employee: Employee): void {
     console.log('Received employee data:', employee);
+
+    // Find department number from name if we don't have dept_no
+    let departmentNo = employee.dept_no;
+    if (!departmentNo && employee.department_name) {
+      const dept = this.departments.find(d => d.dept_name === employee.department_name);
+      if (dept) {
+        departmentNo = dept.dept_no;
+      }
+    }
+
+    // Format date if it's in ISO format
+    const formatDateForInput = (dateStr: string) => {
+      if (!dateStr) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+      const date = new Date(dateStr);
+      return date.toISOString().split('T')[0];
+    };
+
     this.employeeForm.patchValue({
       firstName: employee.first_name,
       lastName: employee.last_name,
-      birthDate: employee.birth_date,
+      birthDate: formatDateForInput(employee.birth_date),
       gender: employee.gender,
-      department: employee.dept_no,
+      department: departmentNo,
       title: employee.title,
       salary: employee.salary
     });

@@ -49,25 +49,47 @@ export class EmployeeService {
 
   constructor(private http: HttpClient) {}
 
-  getAllEmployees(filters?: { title?: string; department?: string }): Observable<Employee[]> {
-    return this.http.get<Employee[]>(this.apiUrl, {
+  getAllEmployees(filters?: { 
+    title?: string; 
+    department?: string; 
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Observable<{ 
+    employees: Employee[]; 
+    total: number; 
+    page: number; 
+    totalPages: number; 
+  }> {
+    return this.http.get<any>(this.apiUrl, {
       params: filters || {}
     }).pipe(
-      map((employees: Employee[]) => employees.map((emp: Employee) => {
-        // Add timezone offset to prevent date shift
-        const adjustDate = (date: string) => {
-          const d = new Date(date);
-          const userTimezoneOffset = d.getTimezoneOffset() * 60000;
-          return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString();
-        };
-
+      map(response => {
+        // Handle the case where response is an array (old format) or object (new format)
+        const employees = Array.isArray(response) ? response : response.employees || [];
+        
         return {
-          ...emp,
-          birth_date: adjustDate(emp.birth_date),
-          hire_date: adjustDate(emp.hire_date),
-          salary: emp.salary || 0
+          employees: employees.map((emp: Employee) => {
+            // Add timezone offset to prevent date shift
+            const adjustDate = (date: string) => {
+              if (!date) return '';
+              const d = new Date(date);
+              const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+              return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString();
+            };
+
+            return {
+              ...emp,
+              birth_date: adjustDate(emp.birth_date),
+              hire_date: adjustDate(emp.hire_date),
+              salary: emp.salary || 0
+            };
+          }),
+          total: Array.isArray(response) ? response.length : (response.total || 0),
+          page: Array.isArray(response) ? 1 : (response.page || 1),
+          totalPages: Array.isArray(response) ? 1 : (response.totalPages || 1)
         };
-      }))
+      })
     );
   }
 
