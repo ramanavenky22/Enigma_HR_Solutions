@@ -233,20 +233,50 @@ exports.updateEmployee = async (req, res) => {
 
       // Update salary
       if (salary) {
-        const updateSalaryQuery = `
-          UPDATE salaries 
-          SET salary = ? 
-          WHERE emp_no = ? AND to_date = '9999-01-01'
-        `;
-        const result = await query(updateSalaryQuery, [salary, id]);
-        
-        // If no current salary exists, insert one
-        if (result.affectedRows === 0) {
-          const insertSalaryQuery = `
-            INSERT INTO salaries (emp_no, salary, from_date, to_date) 
-            VALUES (?, ?, CURDATE(), '9999-01-01')
+        try {
+          console.log('Starting salary update for:', { emp_no: id, salary });
+
+          // Check if there's a salary record for today
+          const getTodaysSalaryQuery = `
+            SELECT * FROM salaries 
+            WHERE emp_no = ? AND from_date = CURDATE()
           `;
-          await query(insertSalaryQuery, [id, salary]);
+          const todaysSalary = await query(getTodaysSalaryQuery, [id]);
+
+          if (todaysSalary.length > 0) {
+            // Update today's salary record
+            const updateTodaySalaryQuery = `
+              UPDATE salaries 
+              SET salary = ?, to_date = '9999-01-01'
+              WHERE emp_no = ? AND from_date = CURDATE()
+            `;
+            await query(updateTodaySalaryQuery, [salary, id]);
+          } else {
+            // End any current salary records
+            const endCurrentSalaryQuery = `
+              UPDATE salaries 
+              SET to_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+              WHERE emp_no = ? AND to_date = '9999-01-01'
+            `;
+            await query(endCurrentSalaryQuery, [id]);
+
+            // Insert new salary record
+            const insertSalaryQuery = `
+              INSERT INTO salaries (emp_no, salary, from_date, to_date) 
+              VALUES (?, ?, CURDATE(), '9999-01-01')
+            `;
+            await query(insertSalaryQuery, [id, salary]);
+          }
+
+          console.log('Salary update completed successfully');
+        } catch (salaryErr) {
+          console.error('Salary update error:', {
+            error: salaryErr.message,
+            stack: salaryErr.stack,
+            emp_no: id,
+            salary
+          });
+          throw new Error(`Salary update failed: ${salaryErr.message}`);
         }
       }
 
@@ -397,7 +427,7 @@ exports.getProfileByAuth0Id = async (req, res) => {
         d.dept_name as department_name,
         de.dept_no,
         t.title,
-        s.salary,
+        COALESCE(s.salary, 0) as salary,
         CONCAT(m.first_name, ' ', m.last_name) as manager_name
       FROM employees e
       LEFT JOIN dept_emp de ON e.emp_no = de.emp_no AND de.to_date = '9999-01-01'
