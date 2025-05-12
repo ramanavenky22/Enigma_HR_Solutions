@@ -42,22 +42,6 @@ const getNotifications = async (req, res) => {
   }
 };
 
-// Get unread notifications count
-const getUnreadCount = async (req, res) => {
-  try {
-    const userId = req.auth.sub;
-    const queryStr = 'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read = 0';
-    const [result] = await query(queryStr, [userId]);
-    res.json({ count: result.count });
-  } catch (err) {
-    console.error('Error in getUnreadCount:', err);
-    res.status(500).json({ 
-      error: 'Error fetching unread count',
-      details: err.message 
-    });
-  }
-};
-
 // Mark notification as read
 const markAsRead = async (req, res) => {
   try {
@@ -114,6 +98,5 @@ function getActionLabel(actionType) {
 
 module.exports = {
   getNotifications,
-  getUnreadCount,
   markAsRead
 };

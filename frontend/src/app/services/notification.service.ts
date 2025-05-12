@@ -21,12 +21,8 @@ export interface Notification {
 })
 export class NotificationService {
   private apiUrl = `${API_URL}/api/notifications`;
-  private unreadCountSubject = new BehaviorSubject<number>(0);
-  unreadCount$ = this.unreadCountSubject.asObservable();
 
-  constructor(private http: HttpClient) {
-    this.updateUnreadCount();
-  }
+  constructor(private http: HttpClient) {}
 
   getNotifications(): Observable<Notification[]> {
     return this.http.get<Notification[]>(this.apiUrl);
@@ -36,19 +32,11 @@ export class NotificationService {
     return new Observable(subscriber => {
       this.http.put<void>(`${this.apiUrl}/${id}/read`, {}).subscribe({
         next: () => {
-          this.updateUnreadCount();
           subscriber.next();
           subscriber.complete();
         },
         error: (error) => subscriber.error(error)
       });
     });
-  }
-
-  private updateUnreadCount() {
-    this.http.get<{ count: number }>(`${this.apiUrl}/unread-count`)
-      .subscribe(response => {
-        this.unreadCountSubject.next(response.count);
-      });
   }
 }
