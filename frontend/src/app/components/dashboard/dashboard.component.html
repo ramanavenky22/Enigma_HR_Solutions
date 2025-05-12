@@ -38,7 +38,12 @@
         </div>
 
         <div class="table-responsive">
-          <table class="employee-table">
+          <div *ngIf="isLoading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Loading employees...</p>
+          </div>
+
+          <table class="employee-table" [class.loading]="isLoading">
             <thead>
               <tr>
                 <th>Employee Name</th>

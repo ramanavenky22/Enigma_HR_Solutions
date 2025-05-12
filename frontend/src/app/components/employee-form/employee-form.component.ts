@@ -24,7 +24,12 @@ interface Department {
         </button>
       </header>
 
-      <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" class="employee-form">
+      <div *ngIf="isLoading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Loading employee data...</p>
+      </div>
+
+      <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" class="employee-form" [class.loading]="isLoading">
         <div class="form-group">
           <label for="firstName">First Name</label>
           <input id="firstName" type="text" formControlName="firstName" class="form-control">
@@ -77,9 +82,13 @@ interface Department {
   `,
   styles: [`
     .employee-form-container {
-      padding: 2rem;
       max-width: 800px;
-      margin: 0 auto;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
     }
 
     .form-header {
@@ -89,82 +98,100 @@ interface Department {
       margin-bottom: 2rem;
     }
 
-    .form-header h1 {
-      font-size: 2rem;
-      color: #2c3e50;
-      margin: 0;
-    }
-
     .back-button {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background-color: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
+      border: none;
+      background: #f0f0f0;
+      border-radius: 4px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: background 0.2s;
     }
 
     .back-button:hover {
-      background-color: #e9ecef;
+      background: #e0e0e0;
     }
 
     .employee-form {
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      transition: opacity 0.3s;
+    }
+
+    .employee-form.loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      color: #2c3e50;
-      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
 
     .form-control {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       font-size: 1rem;
-      transition: border-color 0.3s ease;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: #2196f3;
     }
 
     .form-actions {
-      margin-top: 2rem;
-      text-align: right;
+      grid-column: span 2;
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1rem;
     }
 
     .submit-button {
-      padding: 0.75rem 1.5rem;
-      background-color: #2196f3;
+      padding: 0.5rem 1.5rem;
+      background: #007bff;
       color: white;
       border: none;
-      border-radius: 6px;
-      font-size: 1rem;
+      border-radius: 4px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: background 0.2s;
     }
 
-    .submit-button:hover:not(:disabled) {
-      background-color: #1976d2;
+    .submit-button:hover {
+      background: #0056b3;
     }
 
     .submit-button:disabled {
-      background-color: #ccc;
+      background: #ccc;
       cursor: not-allowed;
     }
   `]
@@ -172,6 +199,7 @@ interface Department {
 export class EmployeeFormComponent implements OnInit {
   employeeForm: FormGroup;
   isEditMode = false;
+  isLoading = false;
   departments: Department[] = [
     { dept_no: 'd001', dept_name: 'Marketing' },
     { dept_no: 'd002', dept_name: 'Finance' },
@@ -207,6 +235,7 @@ export class EmployeeFormComponent implements OnInit {
     
     if (id || auth0Id) {
       this.isEditMode = true;
+      this.isLoading = true;
       if (auth0Id) {
         this.loadEmployeeByAuth0Id(auth0Id);
       } else if (id) {
@@ -216,20 +245,36 @@ export class EmployeeFormComponent implements OnInit {
   }
 
   loadEmployeeByAuth0Id(auth0Id: string): void {
-    this.employeeService.getProfileByAuth0Id(auth0Id).subscribe((employee: Employee) => {
-      this.patchEmployeeForm(employee);
-      // Store emp_no in route queryParams for later use
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { emp_no: employee.emp_no },
-        queryParamsHandling: 'merge'
-      });
+    this.employeeService.getProfileByAuth0Id(auth0Id).subscribe({
+      next: (employee: Employee) => {
+        this.patchEmployeeForm(employee);
+        // Store emp_no in route queryParams for later use
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { emp_no: employee.emp_no },
+          queryParamsHandling: 'merge'
+        });
+      },
+      error: (error) => {
+        console.error('Error loading employee:', error);
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
     });
   }
 
   loadEmployeeById(id: number): void {
-    this.employeeService.getEmployeeById(id).subscribe((employee: Employee) => {
-      this.patchEmployeeForm(employee);
+    this.employeeService.getEmployeeById(id).subscribe({
+      next: (employee: Employee) => {
+        this.patchEmployeeForm(employee);
+      },
+      error: (error) => {
+        console.error('Error loading employee:', error);
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
     });
   }
 

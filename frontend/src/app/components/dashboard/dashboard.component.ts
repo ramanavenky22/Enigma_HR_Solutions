@@ -46,6 +46,7 @@ export class DashboardComponent implements OnInit {
   selectedTitle: string = '';
   searchTerm: string = '';
   titles: string[] = [];
+  isLoading: boolean = false;
   private searchSubject = new Subject<string>();
 
   // Pagination
@@ -100,7 +101,6 @@ export class DashboardComponent implements OnInit {
 
     this.employeeService.getAllEmployees(filters).subscribe({
       next: (response) => {
-        // Ensure we have arrays to work with
         const employees = response.employees || [];
         this.employees = employees;
         this.filteredEmployees = employees;
@@ -122,16 +122,17 @@ export class DashboardComponent implements OnInit {
       error: (error) => {
         console.error('Error loading employees:', error);
         // TODO: Show error message to user
+      },
+      complete: () => {
+        this.isLoading = false;
       }
     });
   }
 
-  onSearch(term: string) {
+  onSearch(term: string): void {
     this.searchTerm = term;
-    this.currentPage = 1; // Reset to first page on new search
-    if (term.length >= 3 || term.length === 0) {
-      this.loadEmployees();
-    }
+    this.isLoading = true;
+    this.searchSubject.next(term);
   }
 
   filterEmployees() {
