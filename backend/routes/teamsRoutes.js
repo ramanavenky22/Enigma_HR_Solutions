@@ -2,24 +2,19 @@ const express = require('express');
 const router = express.Router();
 
 const teamController = require('../controllers/teamController');
-const { checkJwt, checkRole } = require('../middleware/auth');
+const { checkJwt } = require('../middleware/auth');
 
-// Optional: Middleware to enrich req.user with empId from Auth0 `sub`
+// 🔧 Middleware: Optionally enrich user info (you may skip this if not needed)
 const enrichUser = (req, res, next) => {
-  try {
-    const sub = req.auth?.sub || '';
-    const empId = sub.split('|')[1]; // Assumes Auth0 sub format: "auth0|10001"
-    req.user = { empId };
-    next();
-  } catch (err) {
-    console.error('❌ Failed to enrich user from sub:', err);
-    res.status(400).json({ error: 'Invalid token format' });
-  }
+  const sub = req.auth?.sub;
+  if (!sub) return res.status(401).json({ error: 'Unauthorized' });
+  req.user = { auth0Id: sub };
+  next();
 };
 
-// All team routes are manager-only
-router.get('/api/team', checkJwt, enrichUser, checkRole(['hr', 'manager']), teamController.getTeamMembers);
-router.get('/api/team/search', checkJwt, enrichUser, checkRole(['hr', 'manager']), teamController.searchTeamMembers);
-router.get('/api/team/count', checkJwt, enrichUser, checkRole(['hr', 'manager']), teamController.getTeamCount);
+// 📌 Routes — open to all authenticated users
+router.get('/api/team', checkJwt, enrichUser, teamController.getTeamMembers);
+router.get('/api/team/search', checkJwt, enrichUser, teamController.searchTeamMembers);
+router.get('/api/team/count', checkJwt, enrichUser, teamController.getTeamCount);
 
 module.exports = router;
