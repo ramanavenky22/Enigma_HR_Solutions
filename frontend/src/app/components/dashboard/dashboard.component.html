@@ -13,7 +13,7 @@
       <div class="dashboard-card quick-actions">
         <h2>Quick Actions</h2>
         <div class="action-buttons-container">
-          <button class="action-button" (click)="addEmployee()">
+          <button *ngIf="isHR" class="action-button" (click)="addEmployee()">
             <span class="icon">➕</span>
             Add Employee
           </button>
