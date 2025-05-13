@@ -26,6 +26,7 @@ export class ProfileComponent implements OnInit {
   user$: Observable<User>;
   employee$: Observable<Employee | null> = of(null);
   isCurrentUser: boolean = false;
+  isHR: boolean = false;
 
   constructor(
     public router: Router,
@@ -38,6 +39,12 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit() {
     const empId = this.route.snapshot.params['id'];
+
+    // Check HR role for current user
+    this.auth.user$.subscribe(user => {
+      const roles = user?.['https://hr-portal.com/roles'] || [];
+      this.isHR = roles.some((role: string) => role.toLowerCase() === 'hr') || false;
+    });
 
     if (empId) {
       this.employee$ = this.employeeService.getEmployeeById(empId).pipe(
