@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "main": "server.js",
     "scripts": {
-        "start": "node server.js"
+        "start": "node server.js",
+        "test": "mocha tests/**/*.test.js --exit"
     },
     "dependencies": {
         "cors": "^2.8.5",
@@ -15,6 +16,11 @@
         "jwks-rsa": "^3.2.0",
         "mysql2": "^3.14.0",
         "sequelize": "^6.37.7"
+    },
+    "devDependencies": {
+        "mocha": "^10.3.0",
+        "chai": "^4.3.10",
+        "supertest": "^6.3.4"
     },
     "keywords": [],
     "author": "",
